@@ -29,7 +29,10 @@ function loadRecipes() {
 
         } catch (error) {
 
-            console.error("Erreur lors du chargement des recettes :", error);
+            console.error(
+                "Erreur lors du chargement des recettes :",
+                error
+            );
 
             recipes = [];
         }
@@ -56,7 +59,8 @@ function saveRecipes() {
 
 function showPage(pageId) {
 
-    const pages = document.querySelectorAll(".page");
+    const pages =
+        document.querySelectorAll(".page");
 
     pages.forEach(page => {
 
@@ -65,7 +69,8 @@ function showPage(pageId) {
     });
 
 
-    const selectedPage = document.getElementById(pageId);
+    const selectedPage =
+        document.getElementById(pageId);
 
     if (selectedPage) {
 
@@ -95,13 +100,24 @@ function newRecipe() {
     currentRecipeId = null;
 
 
-    document.getElementById("recipe-name").value = "";
+    document.getElementById(
+        "recipe-name"
+    ).value = "";
 
-    document.getElementById("recipe-description").value = "";
 
-    document.getElementById("ingredients-list").innerHTML = "";
+    document.getElementById(
+        "recipe-description"
+    ).value = "";
 
-    document.getElementById("steps-list").innerHTML = "";
+
+    document.getElementById(
+        "ingredients-list"
+    ).innerHTML = "";
+
+
+    document.getElementById(
+        "steps-list"
+    ).innerHTML = "";
 
 
     showPage("creer");
@@ -114,12 +130,17 @@ function newRecipe() {
 
 function startIngredients() {
 
-    const name = document.getElementById("recipe-name").value.trim();
+    const name =
+        document.getElementById(
+            "recipe-name"
+        ).value.trim();
 
 
     if (!name) {
 
-        alert("Merci de donner un nom à ta recette.");
+        alert(
+            "Merci de donner un nom à ta recette."
+        );
 
         return;
     }
@@ -170,7 +191,9 @@ function addIngredient() {
 function renderIngredients() {
 
     const container =
-        document.getElementById("ingredients-list");
+        document.getElementById(
+            "ingredients-list"
+        );
 
 
     container.innerHTML = "";
@@ -178,9 +201,12 @@ function renderIngredients() {
 
     ingredients.forEach(ingredient => {
 
-        const card = document.createElement("div");
+        const card =
+            document.createElement("div");
 
-        card.className = "ingredient-card";
+
+        card.className =
+            "ingredient-card";
 
 
         card.innerHTML = `
@@ -195,7 +221,12 @@ function renderIngredients() {
                     type="text"
                     value="${escapeHtml(ingredient.product)}"
                     placeholder="Ex : Farine"
-                    oninput="updateProduct(${ingredient.id}, this.value)"
+                    oninput="
+                        updateProduct(
+                            ${ingredient.id},
+                            this.value
+                        )
+                    "
                 >
 
             </div>
@@ -213,7 +244,12 @@ function renderIngredients() {
                     step="any"
                     value="${escapeHtml(ingredient.quantity)}"
                     placeholder="500"
-                    oninput="updateQuantity(${ingredient.id}, this.value)"
+                    oninput="
+                        updateQuantity(
+                            ${ingredient.id},
+                            this.value
+                        )
+                    "
                 >
 
             </div>
@@ -226,19 +262,32 @@ function renderIngredients() {
                 </label>
 
                 <select
-                    onchange="updateType(${ingredient.id}, this.value)"
+                    onchange="
+                        updateType(
+                            ${ingredient.id},
+                            this.value
+                        )
+                    "
                 >
 
                     <option
                         value="mass"
-                        ${ingredient.type === "mass" ? "selected" : ""}
+                        ${
+                            ingredient.type === "mass"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         MASSE
                     </option>
 
                     <option
                         value="volume"
-                        ${ingredient.type === "volume" ? "selected" : ""}
+                        ${
+                            ingredient.type === "volume"
+                                ? "selected"
+                                : ""
+                        }
                     >
                         VOLUME
                     </option>
@@ -255,7 +304,12 @@ function renderIngredients() {
                 </label>
 
                 <select
-                    onchange="updateUnit(${ingredient.id}, this.value)"
+                    onchange="
+                        updateUnit(
+                            ${ingredient.id},
+                            this.value
+                        )
+                    "
                 >
 
                     ${getUnitOptions(
@@ -270,7 +324,11 @@ function renderIngredients() {
 
             <button
                 class="delete-button"
-                onclick="deleteIngredient(${ingredient.id})"
+                onclick="
+                    deleteIngredient(
+                        ${ingredient.id}
+                    )
+                "
                 title="Supprimer"
             >
                 ✕
@@ -289,7 +347,10 @@ function renderIngredients() {
    UNITES
 ========================= */
 
-function getUnitOptions(type, selectedUnit) {
+function getUnitOptions(
+    type,
+    selectedUnit
+) {
 
     let units = [];
 
@@ -317,12 +378,18 @@ function getUnitOptions(type, selectedUnit) {
     return units.map(unit => {
 
         return `
+
             <option
                 value="${unit}"
-                ${unit === selectedUnit ? "selected" : ""}
+                ${
+                    unit === selectedUnit
+                        ? "selected"
+                        : ""
+                }
             >
                 ${unit}
             </option>
+
         `;
 
     }).join("");
@@ -333,11 +400,15 @@ function getUnitOptions(type, selectedUnit) {
    MISE À JOUR INGREDIENT
 ========================= */
 
-function updateProduct(id, value) {
+function updateProduct(
+    id,
+    value
+) {
 
-    const ingredient = ingredients.find(
-        item => item.id === id
-    );
+    const ingredient =
+        ingredients.find(
+            item => item.id === id
+        );
 
 
     if (ingredient) {
@@ -347,11 +418,15 @@ function updateProduct(id, value) {
 }
 
 
-function updateQuantity(id, value) {
+function updateQuantity(
+    id,
+    value
+) {
 
-    const ingredient = ingredients.find(
-        item => item.id === id
-    );
+    const ingredient =
+        ingredients.find(
+            item => item.id === id
+        );
 
 
     if (ingredient) {
@@ -361,14 +436,19 @@ function updateQuantity(id, value) {
 }
 
 
-function updateType(id, value) {
+function updateType(
+    id,
+    value
+) {
 
-    const ingredient = ingredients.find(
-        item => item.id === id
-    );
+    const ingredient =
+        ingredients.find(
+            item => item.id === id
+        );
 
 
     if (!ingredient) {
+
         return;
     }
 
@@ -390,11 +470,15 @@ function updateType(id, value) {
 }
 
 
-function updateUnit(id, value) {
+function updateUnit(
+    id,
+    value
+) {
 
-    const ingredient = ingredients.find(
-        item => item.id === id
-    );
+    const ingredient =
+        ingredients.find(
+            item => item.id === id
+        );
 
 
     if (ingredient) {
@@ -410,12 +494,39 @@ function updateUnit(id, value) {
 
 function deleteIngredient(id) {
 
-    ingredients = ingredients.filter(
-        ingredient => ingredient.id !== id
-    );
+    ingredients =
+        ingredients.filter(
+            ingredient =>
+                ingredient.id !== id
+        );
+
+
+    /*
+     * On retire également cet ingrédient
+     * des étapes où il avait été sélectionné.
+     */
+
+    steps.forEach(step => {
+
+        if (
+            Array.isArray(
+                step.ingredientsUsed
+            )
+        ) {
+
+            step.ingredientsUsed =
+                step.ingredientsUsed.filter(
+                    ingredientId =>
+                        ingredientId !== id
+                );
+        }
+
+    });
 
 
     renderIngredients();
+
+    renderSteps();
 }
 
 
@@ -427,7 +538,9 @@ function finishIngredients() {
 
     if (ingredients.length === 0) {
 
-        alert("Ajoute au moins un ingrédient.");
+        alert(
+            "Ajoute au moins un ingrédient."
+        );
 
         return;
     }
@@ -437,7 +550,9 @@ function finishIngredients() {
 
         if (!ingredient.product.trim()) {
 
-            alert("Merci de renseigner tous les produits.");
+            alert(
+                "Merci de renseigner tous les produits."
+            );
 
             return;
         }
@@ -477,7 +592,14 @@ function addStep() {
 
         id: stepId,
 
-        text: ""
+        text: "",
+
+        /*
+         * Liste des ingrédients déjà
+         * ajoutés à cette étape.
+         */
+
+        ingredientsUsed: []
 
     });
 
@@ -496,7 +618,9 @@ function addStep() {
 function renderSteps() {
 
     const container =
-        document.getElementById("steps-list");
+        document.getElementById(
+            "steps-list"
+        );
 
 
     container.innerHTML = "";
@@ -504,9 +628,28 @@ function renderSteps() {
 
     steps.forEach((step, index) => {
 
-        const card = document.createElement("div");
+        /*
+         * Sécurité pour les anciennes étapes
+         * qui n'auraient pas encore
+         * ingredientsUsed.
+         */
 
-        card.className = "step-editor";
+        if (
+            !Array.isArray(
+                step.ingredientsUsed
+            )
+        ) {
+
+            step.ingredientsUsed = [];
+        }
+
+
+        const card =
+            document.createElement("div");
+
+
+        card.className =
+            "step-editor";
 
 
         card.innerHTML = `
@@ -517,9 +660,14 @@ function renderSteps() {
                     Étape ${index + 1}
                 </div>
 
+
                 <button
                     class="delete-button"
-                    onclick="deleteStep(${step.id})"
+                    onclick="
+                        deleteStep(
+                            ${step.id}
+                        )
+                    "
                     title="Supprimer l'étape"
                 >
                     ✕
@@ -531,21 +679,33 @@ function renderSteps() {
             <textarea
                 class="step-textarea"
                 placeholder="Écris ici ce qu'il faut faire..."
-                oninput="updateStepText(${step.id}, this.value)"
+                oninput="
+                    updateStepText(
+                        ${step.id},
+                        this.value
+                    )
+                "
             >${escapeHtml(step.text)}</textarea>
 
 
             <div class="step-tools">
 
                 <select
-                    onchange="insertIngredient(${step.id}, this.value)"
+                    onchange="
+                        insertIngredient(
+                            ${step.id},
+                            this.value
+                        )
+                    "
                 >
 
                     <option value="">
                         Insérer un ingrédient...
                     </option>
 
-                    ${getIngredientOptions()}
+                    ${getIngredientOptions(
+                        step.id
+                    )}
 
                 </select>
 
@@ -564,19 +724,78 @@ function renderSteps() {
    OPTIONS INGREDIENTS
 ========================= */
 
-function getIngredientOptions() {
+function getIngredientOptions(
+    stepIdValue
+) {
 
-    return ingredients.map(ingredient => {
+    const step =
+        steps.find(
+            item =>
+                item.id ===
+                Number(stepIdValue)
+        );
 
-        return `
-            <option value="${ingredient.id}">
-                ${escapeHtml(ingredient.product)}
-                — ${escapeHtml(ingredient.quantity)}
-                ${escapeHtml(getUnitSymbol(ingredient.unit))}
-            </option>
-        `;
 
-    }).join("");
+    /*
+     * Si l'étape n'existe pas,
+     * on affiche simplement les ingrédients.
+     */
+
+    const usedIngredients =
+        step &&
+        Array.isArray(
+            step.ingredientsUsed
+        )
+            ? step.ingredientsUsed
+            : [];
+
+
+    return ingredients.map(
+        ingredient => {
+
+            /*
+             * On vérifie si cet ingrédient
+             * a déjà été utilisé dans cette étape.
+             */
+
+            const alreadyUsed =
+                usedIngredients.includes(
+                    ingredient.id
+                );
+
+
+            return `
+
+                <option
+                    value="${ingredient.id}"
+                >
+
+                    ${
+                        alreadyUsed
+                            ? "✅ "
+                            : ""
+                    }
+
+                    ${escapeHtml(
+                        ingredient.product
+                    )}
+
+                    —
+                    ${escapeHtml(
+                        ingredient.quantity
+                    )}
+                    ${escapeHtml(
+                        getUnitSymbol(
+                            ingredient.unit
+                        )
+                    )}
+
+                </option>
+
+            `;
+
+        }
+    ).join("");
 }
 
 
@@ -594,22 +813,33 @@ function getUnitSymbol(unit) {
    INSERER INGREDIENT
 ========================= */
 
-function insertIngredient(stepIdValue, ingredientIdValue) {
+function insertIngredient(
+    stepIdValue,
+    ingredientIdValue
+) {
 
-    if (ingredientIdValue === "") {
+    if (
+        ingredientIdValue === ""
+    ) {
 
         return;
     }
 
 
-    const step = steps.find(
-        item => item.id === Number(stepIdValue)
-    );
+    const step =
+        steps.find(
+            item =>
+                item.id ===
+                Number(stepIdValue)
+        );
 
 
-    const ingredient = ingredients.find(
-        item => item.id === Number(ingredientIdValue)
-    );
+    const ingredient =
+        ingredients.find(
+            item =>
+                item.id ===
+                Number(ingredientIdValue)
+        );
 
 
     if (!step || !ingredient) {
@@ -618,19 +848,67 @@ function insertIngredient(stepIdValue, ingredientIdValue) {
     }
 
 
+    /*
+     * Création de la liste si nécessaire.
+     */
+
+    if (
+        !Array.isArray(
+            step.ingredientsUsed
+        )
+    ) {
+
+        step.ingredientsUsed = [];
+    }
+
+
+    /*
+     * On ajoute l'ingrédient à la liste
+     * des ingrédients utilisés.
+     *
+     * Même s'il est déjà utilisé,
+     * on l'ajoute quand même dans le texte.
+     *
+     * Cela permet de mettre plusieurs fois
+     * le même ingrédient dans la recette.
+     */
+
+    if (
+        !step.ingredientsUsed.includes(
+            ingredient.id
+        )
+    ) {
+
+        step.ingredientsUsed.push(
+            ingredient.id
+        );
+    }
+
+
     const ingredientText =
-        `${ingredient.quantity} ${getUnitSymbol(ingredient.unit)} de ${ingredient.product}`;
+        `${ingredient.quantity} ${getUnitSymbol(
+            ingredient.unit
+        )} de ${ingredient.product}`;
 
 
     if (step.text.trim()) {
 
-        step.text += " " + ingredientText;
+        step.text +=
+            " " + ingredientText;
 
     } else {
 
-        step.text = ingredientText;
+        step.text =
+            ingredientText;
     }
 
+
+    /*
+     * On recharge la liste.
+     *
+     * L'ingrédient apparaît maintenant
+     * avec le petit ✅.
+     */
 
     renderSteps();
 }
@@ -640,11 +918,15 @@ function insertIngredient(stepIdValue, ingredientIdValue) {
    MODIFIER TEXTE ETAPE
 ========================= */
 
-function updateStepText(id, value) {
+function updateStepText(
+    id,
+    value
+) {
 
-    const step = steps.find(
-        item => item.id === id
-    );
+    const step =
+        steps.find(
+            item => item.id === id
+        );
 
 
     if (step) {
@@ -660,9 +942,11 @@ function updateStepText(id, value) {
 
 function deleteStep(id) {
 
-    steps = steps.filter(
-        step => step.id !== id
-    );
+    steps =
+        steps.filter(
+            step =>
+                step.id !== id
+        );
 
 
     renderSteps();
@@ -677,7 +961,9 @@ function finishRecipe() {
 
     if (steps.length === 0) {
 
-        alert("Ajoute au moins une étape.");
+        alert(
+            "Ajoute au moins une étape."
+        );
 
         return;
     }
@@ -697,15 +983,15 @@ function finishRecipe() {
 
 
     const name =
-        document.getElementById("recipe-name")
-            .value
-            .trim();
+        document.getElementById(
+            "recipe-name"
+        ).value.trim();
 
 
     const description =
-        document.getElementById("recipe-description")
-            .value
-            .trim();
+        document.getElementById(
+            "recipe-description"
+        ).value.trim();
 
 
     if (!name) {
@@ -728,17 +1014,28 @@ function finishRecipe() {
 
         description: description,
 
-        ingredients: ingredients.map(
-            ingredient => ({
-                ...ingredient
-            })
-        ),
+        ingredients:
+            ingredients.map(
+                ingredient => ({
+                    ...ingredient
+                })
+            ),
 
-        steps: steps.map(
-            step => ({
-                ...step
-            })
-        )
+        steps:
+            steps.map(
+                step => ({
+                    ...step,
+
+                    ingredientsUsed:
+                        Array.isArray(
+                            step.ingredientsUsed
+                        )
+                            ? [
+                                ...step.ingredientsUsed
+                            ]
+                            : []
+                })
+            )
 
     };
 
@@ -777,7 +1074,9 @@ function showRecipes() {
 function renderRecipes() {
 
     const grid =
-        document.getElementById("recipes-grid");
+        document.getElementById(
+            "recipes-grid"
+        );
 
 
     grid.innerHTML = "";
@@ -815,24 +1114,34 @@ function renderRecipes() {
     recipes.forEach(recipe => {
 
         const card =
-            document.createElement("div");
+            document.createElement(
+                "div"
+            );
 
-        card.className = "recipe-card";
+
+        card.className =
+            "recipe-card";
 
 
         card.innerHTML = `
 
             <h2>
-                ${escapeHtml(recipe.name)}
+                ${escapeHtml(
+                    recipe.name
+                )}
             </h2>
 
 
             <p>
+
                 ${
                     recipe.description
-                        ? escapeHtml(recipe.description)
+                        ? escapeHtml(
+                            recipe.description
+                        )
                         : "Aucune description."
                 }
+
             </p>
 
 
@@ -840,7 +1149,11 @@ function renderRecipes() {
 
                 <button
                     class="primary-button"
-                    onclick="startRecipe(${recipe.id})"
+                    onclick="
+                        startRecipe(
+                            ${recipe.id}
+                        )
+                    "
                 >
                     COMMENCER →
                 </button>
@@ -848,7 +1161,11 @@ function renderRecipes() {
 
                 <button
                     class="secondary-button"
-                    onclick="deleteRecipe(${recipe.id})"
+                    onclick="
+                        deleteRecipe(
+                            ${recipe.id}
+                        )
+                    "
                 >
                     🗑 Supprimer
                 </button>
@@ -871,7 +1188,10 @@ function renderRecipes() {
 function deleteRecipe(id) {
 
     const recipe =
-        recipes.find(item => item.id === id);
+        recipes.find(
+            item =>
+                item.id === id
+        );
 
 
     if (!recipe) {
@@ -892,9 +1212,11 @@ function deleteRecipe(id) {
     }
 
 
-    recipes = recipes.filter(
-        item => item.id !== id
-    );
+    recipes =
+        recipes.filter(
+            item =>
+                item.id !== id
+        );
 
 
     saveRecipes();
@@ -910,7 +1232,10 @@ function deleteRecipe(id) {
 function startRecipe(id) {
 
     const recipe =
-        recipes.find(item => item.id === id);
+        recipes.find(
+            item =>
+                item.id === id
+        );
 
 
     if (!recipe) {
@@ -923,7 +1248,9 @@ function startRecipe(id) {
 
 
     const reader =
-        document.getElementById("recipe-reader");
+        document.getElementById(
+            "recipe-reader"
+        );
 
 
     reader.innerHTML = `
@@ -931,17 +1258,27 @@ function startRecipe(id) {
         <div class="recipe-start-screen">
 
             <h1>
-                ${escapeHtml(recipe.name)}
+                ${escapeHtml(
+                    recipe.name
+                )}
             </h1>
 
 
             ${
                 recipe.description
+
                     ? `
+
                         <p class="recipe-description">
-                            ${escapeHtml(recipe.description)}
+
+                            ${escapeHtml(
+                                recipe.description
+                            )}
+
                         </p>
+
                     `
+
                     : ""
             }
 
@@ -957,12 +1294,27 @@ function startRecipe(id) {
 
                     ${recipe.ingredients.map(
                         ingredient => `
+
                             <li>
-                                ${escapeHtml(ingredient.quantity)}
-                                ${escapeHtml(getUnitSymbol(ingredient.unit))}
+
+                                ${escapeHtml(
+                                    ingredient.quantity
+                                )}
+
+                                ${escapeHtml(
+                                    getUnitSymbol(
+                                        ingredient.unit
+                                    )
+                                )}
+
                                 de
-                                ${escapeHtml(ingredient.product)}
+
+                                ${escapeHtml(
+                                    ingredient.product
+                                )}
+
                             </li>
+
                         `
                     ).join("")}
 
@@ -972,6 +1324,7 @@ function startRecipe(id) {
 
 
             <div class="reader-actions">
+
 
                 <button
                     class="secondary-button"
@@ -983,10 +1336,15 @@ function startRecipe(id) {
 
                 <button
                     class="primary-button start-reading-button"
-                    onclick="startReadingRecipe(${recipe.id})"
+                    onclick="
+                        startReadingRecipe(
+                            ${recipe.id}
+                        )
+                    "
                 >
                     COMMENCER →
                 </button>
+
 
             </div>
 
@@ -1006,7 +1364,10 @@ function startRecipe(id) {
 function startReadingRecipe(id) {
 
     const recipe =
-        recipes.find(item => item.id === id);
+        recipes.find(
+            item =>
+                item.id === id
+        );
 
 
     if (!recipe) {
@@ -1031,7 +1392,10 @@ function startReadingRecipe(id) {
     currentRecipeId = id;
 
 
-    showRecipeStep(id, 0);
+    showRecipeStep(
+        id,
+        0
+    );
 }
 
 
@@ -1039,10 +1403,16 @@ function startReadingRecipe(id) {
    AFFICHER UNE ETAPE
 ========================= */
 
-function showRecipeStep(id, stepIndex) {
+function showRecipeStep(
+    id,
+    stepIndex
+) {
 
     const recipe =
-        recipes.find(item => item.id === id);
+        recipes.find(
+            item =>
+                item.id === id
+        );
 
 
     if (!recipe) {
@@ -1052,7 +1422,8 @@ function showRecipeStep(id, stepIndex) {
 
 
     if (
-        stepIndex >= recipe.steps.length
+        stepIndex >=
+        recipe.steps.length
     ) {
 
         showRecipeFinished(id);
@@ -1062,7 +1433,9 @@ function showRecipeStep(id, stepIndex) {
 
 
     const reader =
-        document.getElementById("recipe-reader");
+        document.getElementById(
+            "recipe-reader"
+        );
 
 
     const step =
@@ -1076,14 +1449,20 @@ function showRecipeStep(id, stepIndex) {
 
             <div class="step-progress">
 
-                Étape ${stepIndex + 1}
-                / ${recipe.steps.length}
+                Étape
+                ${stepIndex + 1}
+                /
+                ${recipe.steps.length}
 
             </div>
 
 
             <h1>
-                ${escapeHtml(recipe.name)}
+
+                ${escapeHtml(
+                    recipe.name
+                )}
+
             </h1>
 
 
@@ -1100,12 +1479,19 @@ function showRecipeStep(id, stepIndex) {
                 <div class="step-content">
 
                     <h2>
-                        Étape ${stepIndex + 1}
+
+                        Étape
+                        ${stepIndex + 1}
+
                     </h2>
 
 
                     <p>
-                        ${escapeHtml(step.text)}
+
+                        ${escapeHtml(
+                            step.text
+                        )}
+
                     </p>
 
                 </div>
@@ -1123,10 +1509,12 @@ function showRecipeStep(id, stepIndex) {
 
                             <button
                                 class="secondary-button"
-                                onclick="showRecipeStep(
-                                    ${recipe.id},
-                                    ${stepIndex - 1}
-                                )"
+                                onclick="
+                                    showRecipeStep(
+                                        ${recipe.id},
+                                        ${stepIndex - 1}
+                                    )
+                                "
                             >
                                 ← RETOUR
                             </button>
@@ -1137,7 +1525,11 @@ function showRecipeStep(id, stepIndex) {
 
                             <button
                                 class="secondary-button"
-                                onclick="startRecipe(${recipe.id})"
+                                onclick="
+                                    startRecipe(
+                                        ${recipe.id}
+                                    )
+                                "
                             >
                                 ← RETOUR
                             </button>
@@ -1148,15 +1540,20 @@ function showRecipeStep(id, stepIndex) {
 
                 <button
                     class="primary-button"
-                    onclick="showRecipeStep(
-                        ${recipe.id},
-                        ${stepIndex + 1}
-                    )"
+                    onclick="
+                        showRecipeStep(
+                            ${recipe.id},
+                            ${stepIndex + 1}
+                        )
+                    "
                 >
 
                     ${
-                        stepIndex === recipe.steps.length - 1
+                        stepIndex ===
+                        recipe.steps.length - 1
+
                             ? "TERMINER ✓"
+
                             : "SUIVANT →"
                     }
 
@@ -1182,7 +1579,10 @@ function showRecipeStep(id, stepIndex) {
 function showRecipeFinished(id) {
 
     const recipe =
-        recipes.find(item => item.id === id);
+        recipes.find(
+            item =>
+                item.id === id
+        );
 
 
     if (!recipe) {
@@ -1192,7 +1592,9 @@ function showRecipeFinished(id) {
 
 
     const reader =
-        document.getElementById("recipe-reader");
+        document.getElementById(
+            "recipe-reader"
+        );
 
 
     reader.innerHTML = `
@@ -1201,20 +1603,31 @@ function showRecipeFinished(id) {
 
 
             <div class="confetti">
+
                 🎉
+
             </div>
 
 
             <h1>
+
                 Recette terminée !
+
             </h1>
 
 
             <p>
+
                 Bravo ! Tu as terminé
+
                 <strong>
-                    ${escapeHtml(recipe.name)}
+
+                    ${escapeHtml(
+                        recipe.name
+                    )}
+
                 </strong>.
+
             </p>
 
 
@@ -1231,7 +1644,11 @@ function showRecipeFinished(id) {
 
                 <button
                     class="primary-button"
-                    onclick="startRecipe(${recipe.id})"
+                    onclick="
+                        startRecipe(
+                            ${recipe.id}
+                        )
+                    "
                 >
                     RECOMMENCER
                 </button>
@@ -1255,18 +1672,41 @@ function showRecipeFinished(id) {
 
 function escapeHtml(value) {
 
-    if (value === null || value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
 
         return "";
     }
 
 
     return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+
+        .replace(
+            /</g,
+            "&lt;"
+        )
+
+        .replace(
+            />/g,
+            "&gt;"
+        )
+
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 }
 
 
