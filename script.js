@@ -209,6 +209,58 @@ function renderIngredients() {
             "ingredient-card";
 
 
+        /*
+         * Si le type est PERSONNALISER,
+         * on affiche un champ texte libre.
+         *
+         * Sinon, on affiche la liste des unités.
+         */
+
+        let unitField = "";
+
+
+        if (ingredient.type === "custom") {
+
+            unitField = `
+
+                <input
+                    type="text"
+                    value="${escapeHtml(ingredient.unit)}"
+                    placeholder="Ex : cuillère à soupe"
+                    oninput="
+                        updateUnit(
+                            ${ingredient.id},
+                            this.value
+                        )
+                    "
+                >
+
+            `;
+
+        } else {
+
+            unitField = `
+
+                <select
+                    onchange="
+                        updateUnit(
+                            ${ingredient.id},
+                            this.value
+                        )
+                    "
+                >
+
+                    ${getUnitOptions(
+                        ingredient.type,
+                        ingredient.unit
+                    )}
+
+                </select>
+
+            `;
+        }
+
+
         card.innerHTML = `
 
             <div class="ingredient-field">
@@ -281,6 +333,7 @@ function renderIngredients() {
                         MASSE
                     </option>
 
+
                     <option
                         value="volume"
                         ${
@@ -292,6 +345,18 @@ function renderIngredients() {
                         VOLUME
                     </option>
 
+
+                    <option
+                        value="custom"
+                        ${
+                            ingredient.type === "custom"
+                                ? "selected"
+                                : ""
+                        }
+                    >
+                        PERSONNALISER
+                    </option>
+
                 </select>
 
             </div>
@@ -300,24 +365,14 @@ function renderIngredients() {
             <div class="ingredient-field">
 
                 <label>
-                    Unité
+                    ${
+                        ingredient.type === "custom"
+                            ? "Unité personnalisée"
+                            : "Unité"
+                    }
                 </label>
 
-                <select
-                    onchange="
-                        updateUnit(
-                            ${ingredient.id},
-                            this.value
-                        )
-                    "
-                >
-
-                    ${getUnitOptions(
-                        ingredient.type,
-                        ingredient.unit
-                    )}
-
-                </select>
+                ${unitField}
 
             </div>
 
@@ -364,7 +419,7 @@ function getUnitOptions(
             "t"
         ];
 
-    } else {
+    } else if (type === "volume") {
 
         units = [
             "ml",
@@ -436,6 +491,10 @@ function updateQuantity(
 }
 
 
+/* =========================
+   MODIFIER LE TYPE
+========================= */
+
 function updateType(
     id,
     value
@@ -456,13 +515,28 @@ function updateType(
     ingredient.type = value;
 
 
+    /*
+     * Valeur par défaut pour les types
+     * MASSE et VOLUME.
+     */
+
     if (value === "mass") {
 
         ingredient.unit = "g";
 
-    } else {
+    } else if (value === "volume") {
 
         ingredient.unit = "ml";
+
+    } else if (value === "custom") {
+
+        /*
+         * Pour PERSONNALISER,
+         * on vide l'unité afin que
+         * l'utilisateur puisse l'écrire.
+         */
+
+        ingredient.unit = "";
     }
 
 
@@ -569,6 +643,24 @@ function finishIngredients() {
 
             return;
         }
+
+
+        /*
+         * Si PERSONNALISER est sélectionné,
+         * l'unité doit obligatoirement être renseignée.
+         */
+
+        if (
+            ingredient.type === "custom" &&
+            !ingredient.unit.trim()
+        ) {
+
+            alert(
+                "Merci de renseigner l'unité personnalisée."
+            );
+
+            return;
+        }
     }
 
 
@@ -593,11 +685,6 @@ function addStep() {
         id: stepId,
 
         text: "",
-
-        /*
-         * Liste des ingrédients déjà
-         * ajoutés à cette étape.
-         */
 
         ingredientsUsed: []
 
@@ -630,8 +717,7 @@ function renderSteps() {
 
         /*
          * Sécurité pour les anciennes étapes
-         * qui n'auraient pas encore
-         * ingredientsUsed.
+         * qui n'auraient pas encore ingredientsUsed.
          */
 
         if (
@@ -736,11 +822,6 @@ function getIngredientOptions(
         );
 
 
-    /*
-     * Si l'étape n'existe pas,
-     * on affiche simplement les ingrédients.
-     */
-
     const usedIngredients =
         step &&
         Array.isArray(
@@ -752,11 +833,6 @@ function getIngredientOptions(
 
     return ingredients.map(
         ingredient => {
-
-            /*
-             * On vérifie si cet ingrédient
-             * a déjà été utilisé dans cette étape.
-             */
 
             const alreadyUsed =
                 usedIngredients.includes(
@@ -781,9 +857,11 @@ function getIngredientOptions(
                     )}
 
                     —
+
                     ${escapeHtml(
                         ingredient.quantity
                     )}
+
                     ${escapeHtml(
                         getUnitSymbol(
                             ingredient.unit
@@ -848,10 +926,6 @@ function insertIngredient(
     }
 
 
-    /*
-     * Création de la liste si nécessaire.
-     */
-
     if (
         !Array.isArray(
             step.ingredientsUsed
@@ -861,17 +935,6 @@ function insertIngredient(
         step.ingredientsUsed = [];
     }
 
-
-    /*
-     * On ajoute l'ingrédient à la liste
-     * des ingrédients utilisés.
-     *
-     * Même s'il est déjà utilisé,
-     * on l'ajoute quand même dans le texte.
-     *
-     * Cela permet de mettre plusieurs fois
-     * le même ingrédient dans la recette.
-     */
 
     if (
         !step.ingredientsUsed.includes(
@@ -902,13 +965,6 @@ function insertIngredient(
             ingredientText;
     }
 
-
-    /*
-     * On recharge la liste.
-     *
-     * L'ingrédient apparaît maintenant
-     * avec le petit ✅.
-     */
 
     renderSteps();
 }
@@ -1325,7 +1381,6 @@ function startRecipe(id) {
 
             <div class="reader-actions">
 
-
                 <button
                     class="secondary-button"
                     onclick="showRecipes()"
@@ -1344,7 +1399,6 @@ function startRecipe(id) {
                 >
                     COMMENCER →
                 </button>
-
 
             </div>
 
@@ -1446,7 +1500,6 @@ function showRecipeStep(
 
         <div class="recipe-step-screen">
 
-
             <div class="step-progress">
 
                 Étape
@@ -1467,7 +1520,6 @@ function showRecipeStep(
 
 
             <div class="step-card">
-
 
                 <div class="step-number">
 
@@ -1500,7 +1552,6 @@ function showRecipeStep(
 
 
             <div class="reader-actions">
-
 
                 ${
                     stepIndex > 0
@@ -1559,9 +1610,7 @@ function showRecipeStep(
 
                 </button>
 
-
             </div>
-
 
         </div>
 
@@ -1601,7 +1650,6 @@ function showRecipeFinished(id) {
 
         <div class="recipe-finished-screen">
 
-
             <div class="confetti">
 
                 🎉
@@ -1633,7 +1681,6 @@ function showRecipeFinished(id) {
 
             <div class="reader-actions">
 
-
                 <button
                     class="secondary-button"
                     onclick="showRecipes()"
@@ -1653,9 +1700,7 @@ function showRecipeFinished(id) {
                     RECOMMENCER
                 </button>
 
-
             </div>
-
 
         </div>
 
