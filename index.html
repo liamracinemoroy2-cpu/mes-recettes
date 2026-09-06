@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mes Recettes</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- =========================
+         NAVIGATION
+    ========================== -->
+
+    <nav class="navbar">
+
+        <div class="logo">
+            🍳 Mes Recettes
+        </div>
+
+        <div class="nav-buttons">
+
+            <button onclick="showPage('accueil')">
+                Accueil
+            </button>
+
+            <button onclick="newRecipe()">
+                Créer une recette
+            </button>
+
+            <button onclick="showRecipes()">
+                Mes recettes
+            </button>
+
+        </div>
+
+    </nav>
+
+
+    <!-- =========================
+         ACCUEIL
+    ========================== -->
+
+    <main>
+
+        <section id="accueil" class="page active">
+
+            <div class="hero">
+
+                <div class="hero-content">
+
+                    <h1>
+                        🍴 Bienvenue dans<br>
+                        <span>Mes Recettes</span>
+                    </h1>
+
+                    <p>
+                        Crée, sauvegarde et réalise tes recettes
+                        étape par étape.
+                    </p>
+
+                    <div class="hero-buttons">
+
+                        <button
+                            class="primary-button"
+                            onclick="newRecipe()"
+                        >
+                            Créer une recette →
+                        </button>
+
+                        <button
+                            class="secondary-button"
+                            onclick="showRecipes()"
+                        >
+                            Voir mes recettes
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             CRÉER UNE RECETTE
+        ========================== -->
+
+        <section id="creer" class="page">
+
+            <div class="page-container">
+
+                <div class="page-header">
+
+                    <h1>
+                        Créer une recette
+                    </h1>
+
+                    <p>
+                        Commence par donner un nom à ta recette.
+                    </p>
+
+                </div>
+
+
+                <div class="form-card">
+
+                    <label for="recipe-name">
+                        Nom de la recette
+                    </label>
+
+                    <input
+                        id="recipe-name"
+                        type="text"
+                        placeholder="Ex : Tarte aux pommes"
+                    >
+
+
+                    <label for="recipe-description">
+                        Description
+                    </label>
+
+                    <textarea
+                        id="recipe-description"
+                        placeholder="Décris rapidement ta recette..."
+                    ></textarea>
+
+
+                    <div class="form-actions">
+
+                        <button
+                            class="primary-button"
+                            onclick="startIngredients()"
+                        >
+                            Ajouter les ingrédients →
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             INGREDIENTS
+        ========================== -->
+
+        <section id="ingredients" class="page">
+
+            <div class="page-container">
+
+                <div class="page-header">
+
+                    <h1>
+                        Les ingrédients
+                    </h1>
+
+                    <p>
+                        Ajoute tous les ingrédients nécessaires.
+                    </p>
+
+                </div>
+
+
+                <div
+                    id="ingredients-list"
+                    class="ingredients-list"
+                ></div>
+
+
+                <div class="form-actions ingredient-actions">
+
+                    <button
+                        class="secondary-button"
+                        onclick="addIngredient()"
+                    >
+                        + Ajouter un ingrédient
+                    </button>
+
+                    <button
+                        class="secondary-button"
+                        onclick="showPage('creer')"
+                    >
+                        ← RETOUR
+                    </button>
+
+                    <button
+                        class="primary-button"
+                        onclick="finishIngredients()"
+                    >
+                        SUITE →
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             ETAPES
+        ========================== -->
+
+        <section id="etapes" class="page">
+
+            <div class="page-container">
+
+                <div class="page-header">
+
+                    <h1>
+                        Les étapes
+                    </h1>
+
+                    <p>
+                        Écris les différentes étapes de préparation.
+                    </p>
+
+                </div>
+
+
+                <div
+                    id="steps-list"
+                    class="steps-list"
+                ></div>
+
+
+                <div class="form-actions step-actions">
+
+                    <button
+                        class="secondary-button"
+                        onclick="showPage('ingredients')"
+                    >
+                        ← RETOUR
+                    </button>
+
+                    <button
+                        class="secondary-button"
+                        onclick="addStep()"
+                    >
+                        + Ajouter une étape
+                    </button>
+
+                    <button
+                        class="primary-button"
+                        onclick="finishRecipe()"
+                    >
+                        TERMINÉ ✓
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             MES RECETTES
+        ========================== -->
+
+        <section id="recettes" class="page">
+
+            <div class="page-container">
+
+                <div class="page-header">
+
+                    <h1>
+                        Mes recettes
+                    </h1>
+
+                    <p>
+                        Retrouve toutes tes recettes ici.
+                    </p>
+
+                </div>
+
+
+                <div
+                    id="recipes-grid"
+                    class="recipes-grid"
+                ></div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             LECTURE RECETTE
+        ========================== -->
+
+        <section id="lecture" class="page">
+
+            <div class="page-container">
+
+                <div
+                    id="recipe-reader"
+                    class="recipe-reader"
+                ></div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>
