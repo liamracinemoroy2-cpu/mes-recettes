@@ -11,41 +11,19 @@
 
 <body>
 
-    <!-- =========================
-         NAVIGATION
-    ========================== -->
-
     <nav class="navbar">
-
-        <div class="logo">
-            🍳 Mes Recettes
-        </div>
+        <div class="logo">🍳 Mes Recettes</div>
 
         <div class="nav-buttons">
-
-            <button onclick="showPage('accueil')">
-                Accueil
-            </button>
-
-            <button onclick="newRecipe()">
-                Créer une recette
-            </button>
-
-            <button onclick="showRecipes()">
-                Mes recettes
-            </button>
-
+            <button onclick="showPage('accueil')">Accueil</button>
+            <button onclick="newRecipe()">Créer une recette</button>
+            <button onclick="showRecipes()">Mes recettes</button>
         </div>
-
     </nav>
-
-
-    <!-- =========================
-         ACCUEIL
-    ========================== -->
 
     <main>
 
+        <!-- ACCUEIL -->
         <section id="accueil" class="page active">
 
             <div class="hero">
@@ -58,23 +36,20 @@
                     </h1>
 
                     <p>
-                        Crée, sauvegarde et réalise tes recettes
-                        étape par étape.
+                        Crée, sauvegarde et réalise tes recettes étape par étape.
                     </p>
 
                     <div class="hero-buttons">
 
                         <button
                             class="primary-button"
-                            onclick="newRecipe()"
-                        >
+                            onclick="newRecipe()">
                             Créer une recette →
                         </button>
 
                         <button
                             class="secondary-button"
-                            onclick="showRecipes()"
-                        >
+                            onclick="showRecipes()">
                             Voir mes recettes
                         </button>
 
@@ -87,19 +62,14 @@
         </section>
 
 
-        <!-- =========================
-             CRÉER UNE RECETTE
-        ========================== -->
-
+        <!-- CREATION -->
         <section id="creer" class="page">
 
             <div class="page-container">
 
                 <div class="page-header">
 
-                    <h1>
-                        Créer une recette
-                    </h1>
+                    <h1>Créer une recette</h1>
 
                     <p>
                         Commence par donner un nom à ta recette.
@@ -135,8 +105,7 @@
 
                         <button
                             class="primary-button"
-                            onclick="startIngredients()"
-                        >
+                            onclick="startIngredients()">
                             Ajouter les ingrédients →
                         </button>
 
@@ -149,19 +118,14 @@
         </section>
 
 
-        <!-- =========================
-             INGREDIENTS
-        ========================== -->
-
+        <!-- INGREDIENTS -->
         <section id="ingredients" class="page">
 
             <div class="page-container">
 
                 <div class="page-header">
 
-                    <h1>
-                        Les ingrédients
-                    </h1>
+                    <h1>Les ingrédients</h1>
 
                     <p>
                         Ajoute tous les ingrédients nécessaires.
@@ -172,30 +136,27 @@
 
                 <div
                     id="ingredients-list"
-                    class="ingredients-list"
-                ></div>
+                    class="ingredients-list">
+                </div>
 
 
                 <div class="form-actions ingredient-actions">
 
                     <button
                         class="secondary-button"
-                        onclick="addIngredient()"
-                    >
+                        onclick="addIngredient()">
                         + Ajouter un ingrédient
                     </button>
 
                     <button
                         class="secondary-button"
-                        onclick="showPage('creer')"
-                    >
+                        onclick="showPage('creer')">
                         ← RETOUR
                     </button>
 
                     <button
                         class="primary-button"
-                        onclick="finishIngredients()"
-                    >
+                        onclick="finishIngredients()">
                         SUITE →
                     </button>
 
@@ -206,19 +167,14 @@
         </section>
 
 
-        <!-- =========================
-             ETAPES
-        ========================== -->
-
+        <!-- ETAPES -->
         <section id="etapes" class="page">
 
             <div class="page-container">
 
                 <div class="page-header">
 
-                    <h1>
-                        Les étapes
-                    </h1>
+                    <h1>Les étapes</h1>
 
                     <p>
                         Écris les différentes étapes de préparation.
@@ -229,30 +185,27 @@
 
                 <div
                     id="steps-list"
-                    class="steps-list"
-                ></div>
+                    class="steps-list">
+                </div>
 
 
                 <div class="form-actions step-actions">
 
                     <button
                         class="secondary-button"
-                        onclick="showPage('ingredients')"
-                    >
+                        onclick="showPage('ingredients')">
                         ← RETOUR
                     </button>
 
                     <button
                         class="secondary-button"
-                        onclick="addStep()"
-                    >
+                        onclick="addStep()">
                         + Ajouter une étape
                     </button>
 
                     <button
                         class="primary-button"
-                        onclick="finishRecipe()"
-                    >
+                        onclick="finishRecipe()">
                         TERMINÉ ✓
                     </button>
 
@@ -263,19 +216,14 @@
         </section>
 
 
-        <!-- =========================
-             MES RECETTES
-        ========================== -->
-
+        <!-- MES RECETTES -->
         <section id="recettes" class="page">
 
             <div class="page-container">
 
                 <div class="page-header">
 
-                    <h1>
-                        Mes recettes
-                    </h1>
+                    <h1>Mes recettes</h1>
 
                     <p>
                         Retrouve toutes tes recettes ici.
@@ -286,26 +234,23 @@
 
                 <div
                     id="recipes-grid"
-                    class="recipes-grid"
-                ></div>
+                    class="recipes-grid">
+                </div>
 
             </div>
 
         </section>
 
 
-        <!-- =========================
-             LECTURE RECETTE
-        ========================== -->
-
+        <!-- LECTURE -->
         <section id="lecture" class="page">
 
             <div class="page-container">
 
                 <div
                     id="recipe-reader"
-                    class="recipe-reader"
-                ></div>
+                    class="recipe-reader">
+                </div>
 
             </div>
 
@@ -314,16 +259,14 @@
     </main>
 
 
-    <!--
-        IMPORTANT :
-        script.js est maintenant un module
-        car il utilise Firebase.
-    -->
+    <!-- FIREBASE -->
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
 
-    <script
-        type="module"
-        src="script.js"
-    ></script>
+
+    <!-- TON SCRIPT -->
+    <script src="script.js"></script>
 
 </body>
 </html>
