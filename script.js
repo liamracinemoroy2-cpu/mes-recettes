@@ -1,6 +1,75 @@
+/* =========================================================
+   FIREBASE
+========================================================= */
+
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+
+
+import {
+    getFirestore,
+    collection,
+    addDoc,
+    onSnapshot,
+    doc,
+    deleteDoc
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+
+import {
+    getAuth,
+    signInAnonymously,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+
 /* =========================
-   VARIABLES
+   CONFIGURATION FIREBASE
 ========================= */
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyBKpLpyXlwAzFauEte-XFQdEiML-nRbaJ8",
+
+    authDomain:
+        "mes-recettes39.firebaseapp.com",
+
+    projectId:
+        "mes-recettes39",
+
+    storageBucket:
+        "mes-recettes39.firebasestorage.app",
+
+    messagingSenderId:
+        "121399383526",
+
+    appId:
+        "1:121399383526:web:de0667b9467530a4b13227"
+
+};
+
+
+/* =========================
+   INITIALISATION FIREBASE
+========================= */
+
+const app =
+    initializeApp(firebaseConfig);
+
+
+const db =
+    getFirestore(app);
+
+
+const auth =
+    getAuth(app);
+
+
+/* =========================================================
+   VARIABLES
+========================================================= */
 
 let ingredients = [];
 let ingredientId = 0;
@@ -12,90 +81,228 @@ let recipes = [];
 
 let currentRecipeId = null;
 
+let recipesListenerStarted = false;
+
+let currentUser = null;
+
+
+/* =========================================================
+   ATTENTE DE LA CONNEXION FIREBASE
+========================================================= */
+
+let authReadyResolve;
+
+const authReady =
+    new Promise(resolve => {
+
+        authReadyResolve = resolve;
+
+    });
+
+
+/* =========================================================
+   AUTHENTIFICATION ANONYME
+========================================================= */
+
+onAuthStateChanged(
+    auth,
+    user => {
+
+        if (user) {
+
+            currentUser = user;
+
+            authReadyResolve(user);
+
+            subscribeToRecipes();
+
+        }
+
+    }
+);
+
 
 /* =========================
-   SAUVEGARDE
+   CONNEXION ANONYME
 ========================= */
 
-function loadRecipes() {
+async function initializeAuthentication() {
 
-    const savedRecipes = localStorage.getItem("mesRecettes");
+    try {
 
-    if (savedRecipes) {
+        await signInAnonymously(auth);
 
-        try {
+    } catch (error) {
 
-            recipes = JSON.parse(savedRecipes);
+        console.error(
+            "Erreur d'authentification Firebase :",
+            error
+        );
 
-        } catch (error) {
+        alert(
+            "Impossible de se connecter à Firebase. Vérifie que l'authentification anonyme est activée."
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   RECUPERATION DES RECETTES FIRESTORE
+========================================================= */
+
+function subscribeToRecipes() {
+
+    if (recipesListenerStarted) {
+
+        return;
+
+    }
+
+
+    recipesListenerStarted = true;
+
+
+    const recipesCollection =
+        collection(
+            db,
+            "recipes"
+        );
+
+
+    onSnapshot(
+
+        recipesCollection,
+
+        snapshot => {
+
+            recipes =
+                snapshot.docs
+
+                    .map(documentSnapshot => {
+
+                        return {
+
+                            id:
+                                documentSnapshot.id,
+
+                            ...documentSnapshot.data()
+
+                        };
+
+                    })
+
+                    /*
+                     * On ignore les anciens documents
+                     * de test ou incomplets.
+                     */
+
+                    .filter(recipe => {
+
+                        return (
+
+                            recipe.name &&
+
+                            Array.isArray(
+                                recipe.ingredients
+                            ) &&
+
+                            Array.isArray(
+                                recipe.steps
+                            )
+
+                        );
+
+                    });
+
+
+            renderRecipes();
+
+        },
+
+
+        error => {
 
             console.error(
-                "Erreur lors du chargement des recettes :",
+                "Erreur Firestore :",
                 error
             );
 
-            recipes = [];
+
+            alert(
+                "Impossible de charger les recettes depuis Firebase."
+            );
+
         }
 
-    } else {
-
-        recipes = [];
-    }
-}
-
-
-function saveRecipes() {
-
-    localStorage.setItem(
-        "mesRecettes",
-        JSON.stringify(recipes)
     );
+
 }
 
 
-/* =========================
+/* =========================================================
    NAVIGATION
-========================= */
+========================================================= */
 
 function showPage(pageId) {
 
     const pages =
-        document.querySelectorAll(".page");
+        document.querySelectorAll(
+            ".page"
+        );
+
 
     pages.forEach(page => {
 
-        page.classList.remove("active");
+        page.classList.remove(
+            "active"
+        );
 
     });
 
 
     const selectedPage =
-        document.getElementById(pageId);
+        document.getElementById(
+            pageId
+        );
+
 
     if (selectedPage) {
 
-        selectedPage.classList.add("active");
+        selectedPage.classList.add(
+            "active"
+        );
+
     }
 
 
     window.scrollTo({
+
         top: 0,
+
         behavior: "smooth"
+
     });
+
 }
 
 
-/* =========================
+/* =========================================================
    NOUVELLE RECETTE
-========================= */
+========================================================= */
 
 function newRecipe() {
 
     ingredients = [];
+
     ingredientId = 0;
 
+
     steps = [];
+
     stepId = 0;
+
 
     currentRecipeId = null;
 
@@ -120,13 +327,16 @@ function newRecipe() {
     ).innerHTML = "";
 
 
-    showPage("creer");
+    showPage(
+        "creer"
+    );
+
 }
 
 
-/* =========================
+/* =========================================================
    COMMENCER LES INGREDIENTS
-========================= */
+========================================================= */
 
 function startIngredients() {
 
@@ -143,36 +353,46 @@ function startIngredients() {
         );
 
         return;
+
     }
 
 
-    showPage("ingredients");
+    showPage(
+        "ingredients"
+    );
 
 
     if (ingredients.length === 0) {
 
         addIngredient();
+
     }
+
 }
 
 
-/* =========================
+/* =========================================================
    AJOUTER UN INGREDIENT
-========================= */
+========================================================= */
 
 function addIngredient() {
 
     ingredients.push({
 
-        id: ingredientId,
+        id:
+            ingredientId,
 
-        product: "",
+        product:
+            "",
 
-        quantity: "",
+        quantity:
+            "",
 
-        type: "mass",
+        type:
+            "mass",
 
-        unit: "g"
+        unit:
+            "g"
 
     });
 
@@ -181,12 +401,13 @@ function addIngredient() {
 
 
     renderIngredients();
+
 }
 
 
-/* =========================
+/* =========================================================
    AFFICHER LES INGREDIENTS
-========================= */
+========================================================= */
 
 function renderIngredients() {
 
@@ -199,208 +420,223 @@ function renderIngredients() {
     container.innerHTML = "";
 
 
-    ingredients.forEach(ingredient => {
+    ingredients.forEach(
+        ingredient => {
 
-        const card =
-            document.createElement("div");
-
-
-        card.className =
-            "ingredient-card";
-
-
-        /*
-         * Si le type est PERSONNALISER,
-         * on affiche un champ texte libre.
-         *
-         * Sinon, on affiche la liste des unités.
-         */
-
-        let unitField = "";
+            const card =
+                document.createElement(
+                    "div"
+                );
 
 
-        if (ingredient.type === "custom") {
-
-            unitField = `
-
-                <input
-                    type="text"
-                    value="${escapeHtml(ingredient.unit)}"
-                    placeholder="Ex : cuillère à soupe"
-                    oninput="
-                        updateUnit(
-                            ${ingredient.id},
-                            this.value
-                        )
-                    "
-                >
-
-            `;
-
-        } else {
-
-            unitField = `
-
-                <select
-                    onchange="
-                        updateUnit(
-                            ${ingredient.id},
-                            this.value
-                        )
-                    "
-                >
-
-                    ${getUnitOptions(
-                        ingredient.type,
-                        ingredient.unit
-                    )}
-
-                </select>
-
-            `;
-        }
+            card.className =
+                "ingredient-card";
 
 
-        card.innerHTML = `
-
-            <div class="ingredient-field">
-
-                <label>
-                    Produit
-                </label>
-
-                <input
-                    type="text"
-                    value="${escapeHtml(ingredient.product)}"
-                    placeholder="Ex : Farine"
-                    oninput="
-                        updateProduct(
-                            ${ingredient.id},
-                            this.value
-                        )
-                    "
-                >
-
-            </div>
+            let unitField = "";
 
 
-            <div class="ingredient-field">
+            if (
+                ingredient.type ===
+                "custom"
+            ) {
 
-                <label>
-                    Quantité
-                </label>
+                unitField = `
 
-                <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value="${escapeHtml(ingredient.quantity)}"
-                    placeholder="500"
-                    oninput="
-                        updateQuantity(
-                            ${ingredient.id},
-                            this.value
-                        )
-                    "
-                >
-
-            </div>
-
-
-            <div class="ingredient-field">
-
-                <label>
-                    Type
-                </label>
-
-                <select
-                    onchange="
-                        updateType(
-                            ${ingredient.id},
-                            this.value
-                        )
-                    "
-                >
-
-                    <option
-                        value="mass"
-                        ${
-                            ingredient.type === "mass"
-                                ? "selected"
-                                : ""
-                        }
+                    <input
+                        type="text"
+                        value="${escapeHtml(
+                            ingredient.unit
+                        )}"
+                        placeholder="Ex : cuillère à soupe"
+                        oninput="
+                            updateUnit(
+                                ${ingredient.id},
+                                this.value
+                            )
+                        "
                     >
-                        MASSE
-                    </option>
 
+                `;
 
-                    <option
-                        value="volume"
-                        ${
-                            ingredient.type === "volume"
-                                ? "selected"
-                                : ""
-                        }
+            } else {
+
+                unitField = `
+
+                    <select
+                        onchange="
+                            updateUnit(
+                                ${ingredient.id},
+                                this.value
+                            )
+                        "
                     >
-                        VOLUME
-                    </option>
+
+                        ${getUnitOptions(
+
+                            ingredient.type,
+
+                            ingredient.unit
+
+                        )}
+
+                    </select>
+
+                `;
+
+            }
 
 
-                    <option
-                        value="custom"
+            card.innerHTML = `
+
+                <div class="ingredient-field">
+
+                    <label>
+                        Produit
+                    </label>
+
+                    <input
+                        type="text"
+                        value="${escapeHtml(
+                            ingredient.product
+                        )}"
+                        placeholder="Ex : Farine"
+                        oninput="
+                            updateProduct(
+                                ${ingredient.id},
+                                this.value
+                            )
+                        "
+                    >
+
+                </div>
+
+
+                <div class="ingredient-field">
+
+                    <label>
+                        Quantité
+                    </label>
+
+                    <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value="${escapeHtml(
+                            ingredient.quantity
+                        )}"
+                        placeholder="500"
+                        oninput="
+                            updateQuantity(
+                                ${ingredient.id},
+                                this.value
+                            )
+                        "
+                    >
+
+                </div>
+
+
+                <div class="ingredient-field">
+
+                    <label>
+                        Type
+                    </label>
+
+                    <select
+                        onchange="
+                            updateType(
+                                ${ingredient.id},
+                                this.value
+                            )
+                        "
+                    >
+
+                        <option
+                            value="mass"
+                            ${
+                                ingredient.type === "mass"
+                                    ? "selected"
+                                    : ""
+                            }
+                        >
+                            MASSE
+                        </option>
+
+
+                        <option
+                            value="volume"
+                            ${
+                                ingredient.type === "volume"
+                                    ? "selected"
+                                    : ""
+                            }
+                        >
+                            VOLUME
+                        </option>
+
+
+                        <option
+                            value="custom"
+                            ${
+                                ingredient.type === "custom"
+                                    ? "selected"
+                                    : ""
+                            }
+                        >
+                            PERSONNALISER
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="ingredient-field">
+
+                    <label>
+
                         ${
                             ingredient.type === "custom"
-                                ? "selected"
-                                : ""
+                                ? "Unité personnalisée"
+                                : "Unité"
                         }
-                    >
-                        PERSONNALISER
-                    </option>
 
-                </select>
+                    </label>
 
-            </div>
+                    ${unitField}
 
-
-            <div class="ingredient-field">
-
-                <label>
-                    ${
-                        ingredient.type === "custom"
-                            ? "Unité personnalisée"
-                            : "Unité"
-                    }
-                </label>
-
-                ${unitField}
-
-            </div>
+                </div>
 
 
-            <button
-                class="delete-button"
-                onclick="
-                    deleteIngredient(
-                        ${ingredient.id}
-                    )
-                "
-                title="Supprimer"
-            >
-                ✕
-            </button>
+                <button
+                    class="delete-button"
+                    onclick="
+                        deleteIngredient(
+                            ${ingredient.id}
+                        )
+                    "
+                    title="Supprimer"
+                >
+                    ✕
+                </button>
 
-        `;
+            `;
 
 
-        container.appendChild(card);
+            container.appendChild(
+                card
+            );
 
-    });
+        }
+    );
+
 }
 
 
-/* =========================
+/* =========================================================
    UNITES
-========================= */
+========================================================= */
 
 function getUnitOptions(
     type,
@@ -413,47 +649,57 @@ function getUnitOptions(
     if (type === "mass") {
 
         units = [
+
             "mg",
             "g",
             "kg",
             "t"
+
         ];
 
-    } else if (type === "volume") {
+    } else if (
+        type === "volume"
+    ) {
 
         units = [
+
             "ml",
             "cl",
             "dl",
             "l"
+
         ];
+
     }
 
 
-    return units.map(unit => {
+    return units.map(
+        unit => {
 
-        return `
+            return `
 
-            <option
-                value="${unit}"
-                ${
-                    unit === selectedUnit
-                        ? "selected"
-                        : ""
-                }
-            >
-                ${unit}
-            </option>
+                <option
+                    value="${unit}"
+                    ${
+                        unit === selectedUnit
+                            ? "selected"
+                            : ""
+                    }
+                >
+                    ${unit}
+                </option>
 
-        `;
+            `;
 
-    }).join("");
+        }
+    ).join("");
+
 }
 
 
-/* =========================
-   MISE À JOUR INGREDIENT
-========================= */
+/* =========================================================
+   MISE A JOUR INGREDIENT
+========================================================= */
 
 function updateProduct(
     id,
@@ -462,16 +708,24 @@ function updateProduct(
 
     const ingredient =
         ingredients.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
     if (ingredient) {
 
-        ingredient.product = value;
+        ingredient.product =
+            value;
+
     }
+
 }
 
+
+/* =========================
+   QUANTITE
+========================= */
 
 function updateQuantity(
     id,
@@ -480,20 +734,24 @@ function updateQuantity(
 
     const ingredient =
         ingredients.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
     if (ingredient) {
 
-        ingredient.quantity = value;
+        ingredient.quantity =
+            value;
+
     }
+
 }
 
 
-/* =========================
+/* =========================================================
    MODIFIER LE TYPE
-========================= */
+========================================================= */
 
 function updateType(
     id,
@@ -502,47 +760,52 @@ function updateType(
 
     const ingredient =
         ingredients.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
     if (!ingredient) {
 
         return;
+
     }
 
 
-    ingredient.type = value;
+    ingredient.type =
+        value;
 
-
-    /*
-     * Valeur par défaut pour les types
-     * MASSE et VOLUME.
-     */
 
     if (value === "mass") {
 
-        ingredient.unit = "g";
+        ingredient.unit =
+            "g";
 
-    } else if (value === "volume") {
+    } else if (
+        value === "volume"
+    ) {
 
-        ingredient.unit = "ml";
+        ingredient.unit =
+            "ml";
 
-    } else if (value === "custom") {
+    } else if (
+        value === "custom"
+    ) {
 
-        /*
-         * Pour PERSONNALISER,
-         * on vide l'unité afin que
-         * l'utilisateur puisse l'écrire.
-         */
+        ingredient.unit =
+            "";
 
-        ingredient.unit = "";
     }
 
 
     renderIngredients();
+
 }
 
+
+/* =========================================================
+   MODIFIER L'UNITE
+========================================================= */
 
 function updateUnit(
     id,
@@ -551,22 +814,28 @@ function updateUnit(
 
     const ingredient =
         ingredients.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
     if (ingredient) {
 
-        ingredient.unit = value;
+        ingredient.unit =
+            value;
+
     }
+
 }
 
 
-/* =========================
+/* =========================================================
    SUPPRIMER INGREDIENT
-========================= */
+========================================================= */
 
-function deleteIngredient(id) {
+function deleteIngredient(
+    id
+) {
 
     ingredients =
         ingredients.filter(
@@ -575,66 +844,79 @@ function deleteIngredient(id) {
         );
 
 
-    /*
-     * On retire également cet ingrédient
-     * des étapes où il avait été sélectionné.
-     */
+    steps.forEach(
+        step => {
 
-    steps.forEach(step => {
+            if (
+                Array.isArray(
+                    step.ingredientsUsed
+                )
+            ) {
 
-        if (
-            Array.isArray(
-                step.ingredientsUsed
-            )
-        ) {
+                step.ingredientsUsed =
+                    step.ingredientsUsed.filter(
+                        ingredientId =>
+                            ingredientId !== id
+                    );
 
-            step.ingredientsUsed =
-                step.ingredientsUsed.filter(
-                    ingredientId =>
-                        ingredientId !== id
-                );
+            }
+
         }
-
-    });
+    );
 
 
     renderIngredients();
 
     renderSteps();
+
 }
 
 
-/* =========================
+/* =========================================================
    FIN INGREDIENTS
-========================= */
+========================================================= */
 
 function finishIngredients() {
 
-    if (ingredients.length === 0) {
+    if (
+        ingredients.length === 0
+    ) {
 
         alert(
             "Ajoute au moins un ingrédient."
         );
 
         return;
+
     }
 
 
-    for (const ingredient of ingredients) {
+    for (
+        const ingredient
+        of ingredients
+    ) {
 
-        if (!ingredient.product.trim()) {
+        if (
+            !ingredient.product.trim()
+        ) {
 
             alert(
                 "Merci de renseigner tous les produits."
             );
 
             return;
+
         }
 
 
         if (
+
             ingredient.quantity === "" ||
-            Number(ingredient.quantity) <= 0
+
+            Number(
+                ingredient.quantity
+            ) <= 0
+
         ) {
 
             alert(
@@ -642,17 +924,17 @@ function finishIngredients() {
             );
 
             return;
+
         }
 
 
-        /*
-         * Si PERSONNALISER est sélectionné,
-         * l'unité doit obligatoirement être renseignée.
-         */
-
         if (
-            ingredient.type === "custom" &&
+
+            ingredient.type ===
+                "custom" &&
+
             !ingredient.unit.trim()
+
         ) {
 
             alert(
@@ -660,33 +942,44 @@ function finishIngredients() {
             );
 
             return;
+
         }
+
     }
 
 
-    showPage("etapes");
+    showPage(
+        "etapes"
+    );
 
 
-    if (steps.length === 0) {
+    if (
+        steps.length === 0
+    ) {
 
         addStep();
+
     }
+
 }
 
 
-/* =========================
+/* =========================================================
    AJOUTER UNE ETAPE
-========================= */
+========================================================= */
 
 function addStep() {
 
     steps.push({
 
-        id: stepId,
+        id:
+            stepId,
 
-        text: "",
+        text:
+            "",
 
-        ingredientsUsed: []
+        ingredientsUsed:
+            []
 
     });
 
@@ -695,12 +988,13 @@ function addStep() {
 
 
     renderSteps();
+
 }
 
 
-/* =========================
+/* =========================================================
    AFFICHER LES ETAPES
-========================= */
+========================================================= */
 
 function renderSteps() {
 
@@ -713,102 +1007,111 @@ function renderSteps() {
     container.innerHTML = "";
 
 
-    steps.forEach((step, index) => {
+    steps.forEach(
+        (step, index) => {
 
-        /*
-         * Sécurité pour les anciennes étapes
-         * qui n'auraient pas encore ingredientsUsed.
-         */
+            if (
+                !Array.isArray(
+                    step.ingredientsUsed
+                )
+            ) {
 
-        if (
-            !Array.isArray(
-                step.ingredientsUsed
-            )
-        ) {
+                step.ingredientsUsed =
+                    [];
 
-            step.ingredientsUsed = [];
-        }
+            }
 
 
-        const card =
-            document.createElement("div");
+            const card =
+                document.createElement(
+                    "div"
+                );
 
 
-        card.className =
-            "step-editor";
+            card.className =
+                "step-editor";
 
 
-        card.innerHTML = `
+            card.innerHTML = `
 
-            <div class="step-editor-header">
+                <div class="step-editor-header">
 
-                <div class="step-title">
-                    Étape ${index + 1}
+                    <div class="step-title">
+
+                        Étape
+                        ${index + 1}
+
+                    </div>
+
+
+                    <button
+                        class="delete-button"
+                        onclick="
+                            deleteStep(
+                                ${step.id}
+                            )
+                        "
+                        title="Supprimer l'étape"
+                    >
+                        ✕
+                    </button>
+
                 </div>
 
 
-                <button
-                    class="delete-button"
-                    onclick="
-                        deleteStep(
-                            ${step.id}
-                        )
-                    "
-                    title="Supprimer l'étape"
-                >
-                    ✕
-                </button>
-
-            </div>
-
-
-            <textarea
-                class="step-textarea"
-                placeholder="Écris ici ce qu'il faut faire..."
-                oninput="
-                    updateStepText(
-                        ${step.id},
-                        this.value
-                    )
-                "
-            >${escapeHtml(step.text)}</textarea>
-
-
-            <div class="step-tools">
-
-                <select
-                    onchange="
-                        insertIngredient(
+                <textarea
+                    class="step-textarea"
+                    placeholder="Écris ici ce qu'il faut faire..."
+                    oninput="
+                        updateStepText(
                             ${step.id},
                             this.value
                         )
                     "
-                >
-
-                    <option value="">
-                        Insérer un ingrédient...
-                    </option>
-
-                    ${getIngredientOptions(
-                        step.id
-                    )}
-
-                </select>
-
-            </div>
-
-        `;
+                >${escapeHtml(
+                    step.text
+                )}</textarea>
 
 
-        container.appendChild(card);
+                <div class="step-tools">
 
-    });
+                    <select
+                        onchange="
+                            insertIngredient(
+                                ${step.id},
+                                this.value
+                            )
+                        "
+                    >
+
+                        <option value="">
+                            Insérer un ingrédient...
+                        </option>
+
+                        ${getIngredientOptions(
+                            step.id
+                        )}
+
+                    </select>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(
+                card
+            );
+
+        }
+    );
+
 }
 
 
-/* =========================
+/* =========================================================
    OPTIONS INGREDIENTS
-========================= */
+========================================================= */
 
 function getIngredientOptions(
     stepIdValue
@@ -823,11 +1126,15 @@ function getIngredientOptions(
 
 
     const usedIngredients =
+
         step &&
+
         Array.isArray(
             step.ingredientsUsed
         )
+
             ? step.ingredientsUsed
+
             : [];
 
 
@@ -874,22 +1181,26 @@ function getIngredientOptions(
 
         }
     ).join("");
+
 }
 
 
-/* =========================
+/* =========================================================
    SYMBOLE UNITE
-========================= */
+========================================================= */
 
-function getUnitSymbol(unit) {
+function getUnitSymbol(
+    unit
+) {
 
     return unit;
+
 }
 
 
-/* =========================
+/* =========================================================
    INSERER INGREDIENT
-========================= */
+========================================================= */
 
 function insertIngredient(
     stepIdValue,
@@ -901,6 +1212,7 @@ function insertIngredient(
     ) {
 
         return;
+
     }
 
 
@@ -920,9 +1232,13 @@ function insertIngredient(
         );
 
 
-    if (!step || !ingredient) {
+    if (
+        !step ||
+        !ingredient
+    ) {
 
         return;
+
     }
 
 
@@ -932,7 +1248,9 @@ function insertIngredient(
         )
     ) {
 
-        step.ingredientsUsed = [];
+        step.ingredientsUsed =
+            [];
+
     }
 
 
@@ -945,34 +1263,41 @@ function insertIngredient(
         step.ingredientsUsed.push(
             ingredient.id
         );
+
     }
 
 
     const ingredientText =
+
         `${ingredient.quantity} ${getUnitSymbol(
             ingredient.unit
         )} de ${ingredient.product}`;
 
 
-    if (step.text.trim()) {
+    if (
+        step.text.trim()
+    ) {
 
         step.text +=
-            " " + ingredientText;
+            " " +
+            ingredientText;
 
     } else {
 
         step.text =
             ingredientText;
+
     }
 
 
     renderSteps();
+
 }
 
 
-/* =========================
+/* =========================================================
    MODIFIER TEXTE ETAPE
-========================= */
+========================================================= */
 
 function updateStepText(
     id,
@@ -981,22 +1306,28 @@ function updateStepText(
 
     const step =
         steps.find(
-            item => item.id === id
+            item =>
+                item.id === id
         );
 
 
     if (step) {
 
-        step.text = value;
+        step.text =
+            value;
+
     }
+
 }
 
 
-/* =========================
+/* =========================================================
    SUPPRIMER ETAPE
-========================= */
+========================================================= */
 
-function deleteStep(id) {
+function deleteStep(
+    id
+) {
 
     steps =
         steps.filter(
@@ -1006,35 +1337,46 @@ function deleteStep(id) {
 
 
     renderSteps();
+
 }
 
 
-/* =========================
+/* =========================================================
    TERMINER LA RECETTE
-========================= */
+========================================================= */
 
-function finishRecipe() {
+async function finishRecipe() {
 
-    if (steps.length === 0) {
+    if (
+        steps.length === 0
+    ) {
 
         alert(
             "Ajoute au moins une étape."
         );
 
         return;
+
     }
 
 
-    for (const step of steps) {
+    for (
+        const step
+        of steps
+    ) {
 
-        if (!step.text.trim()) {
+        if (
+            !step.text.trim()
+        ) {
 
             alert(
                 "Merci de remplir toutes les étapes."
             );
 
             return;
+
         }
+
     }
 
 
@@ -1056,76 +1398,145 @@ function finishRecipe() {
             "Le nom de la recette est obligatoire."
         );
 
-        showPage("creer");
+        showPage(
+            "creer"
+        );
 
         return;
+
     }
 
 
-    const recipe = {
+    /*
+     * On attend que Firebase soit connecté.
+     */
 
-        id: Date.now(),
+    try {
 
-        name: name,
+        const user =
+            currentUser ||
+            await authReady;
 
-        description: description,
 
-        ingredients:
-            ingredients.map(
-                ingredient => ({
-                    ...ingredient
-                })
+        if (!user) {
+
+            alert(
+                "La connexion à Firebase n'est pas prête."
+            );
+
+            return;
+
+        }
+
+
+        const recipe = {
+
+            name:
+                name,
+
+            description:
+                description,
+
+            ingredients:
+                ingredients.map(
+                    ingredient => ({
+
+                        ...ingredient
+
+                    })
+                ),
+
+            steps:
+                steps.map(
+                    step => ({
+
+                        ...step,
+
+                        ingredientsUsed:
+
+                            Array.isArray(
+                                step.ingredientsUsed
+                            )
+
+                                ? [
+                                    ...step.ingredientsUsed
+                                ]
+
+                                : []
+
+                    })
+                ),
+
+            author_uid:
+                user.uid
+
+        };
+
+
+        /*
+         * Enregistrement dans Firestore.
+         */
+
+        await addDoc(
+
+            collection(
+                db,
+                "recipes"
             ),
 
-        steps:
-            steps.map(
-                step => ({
-                    ...step,
+            recipe
 
-                    ingredientsUsed:
-                        Array.isArray(
-                            step.ingredientsUsed
-                        )
-                            ? [
-                                ...step.ingredientsUsed
-                            ]
-                            : []
-                })
-            )
-
-    };
+        );
 
 
-    recipes.push(recipe);
+        /*
+         * La recette sera automatiquement
+         * récupérée par onSnapshot().
+         */
+
+        showRecipes();
 
 
-    saveRecipes();
+        alert(
+            "🎉 Ta recette a bien été enregistrée !"
+        );
 
 
-    showRecipes();
+    } catch (error) {
+
+        console.error(
+            "Erreur lors de l'enregistrement :",
+            error
+        );
 
 
-    alert(
-        "🎉 Ta recette a bien été enregistrée !"
-    );
+        alert(
+            "Impossible d'enregistrer la recette dans Firebase."
+        );
+
+    }
+
 }
 
 
-/* =========================
+/* =========================================================
    AFFICHER MES RECETTES
-========================= */
+========================================================= */
 
 function showRecipes() {
 
     renderRecipes();
 
-    showPage("recettes");
+    showPage(
+        "recettes"
+    );
+
 }
 
 
-/* =========================
+/* =========================================================
    AFFICHER LES CARTES
-========================= */
+========================================================= */
 
 function renderRecipes() {
 
@@ -1135,10 +1546,19 @@ function renderRecipes() {
         );
 
 
+    if (!grid) {
+
+        return;
+
+    }
+
+
     grid.innerHTML = "";
 
 
-    if (recipes.length === 0) {
+    if (
+        recipes.length === 0
+    ) {
 
         grid.innerHTML = `
 
@@ -1164,84 +1584,101 @@ function renderRecipes() {
         `;
 
         return;
+
     }
 
 
-    recipes.forEach(recipe => {
+    recipes.forEach(
+        recipe => {
 
-        const card =
-            document.createElement(
-                "div"
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+
+            card.className =
+                "recipe-card";
+
+
+            card.innerHTML = `
+
+                <h2>
+
+                    ${escapeHtml(
+                        recipe.name
+                    )}
+
+                </h2>
+
+
+                <p>
+
+                    ${
+                        recipe.description
+
+                            ? escapeHtml(
+                                recipe.description
+                            )
+
+                            : "Aucune description."
+
+                    }
+
+                </p>
+
+
+                <div class="recipe-card-actions">
+
+                    <button
+                        class="primary-button"
+                        onclick="
+                            startRecipe(
+                                '${escapeHtml(
+                                    recipe.id
+                                )}'
+                            )
+                        "
+                    >
+                        COMMENCER →
+                    </button>
+
+
+                    <button
+                        class="secondary-button"
+                        onclick="
+                            deleteRecipe(
+                                '${escapeHtml(
+                                    recipe.id
+                                )}'
+                            )
+                        "
+                    >
+                        🗑 Supprimer
+                    </button>
+
+                </div>
+
+            `;
+
+
+            grid.appendChild(
+                card
             );
 
+        }
+    );
 
-        card.className =
-            "recipe-card";
-
-
-        card.innerHTML = `
-
-            <h2>
-                ${escapeHtml(
-                    recipe.name
-                )}
-            </h2>
-
-
-            <p>
-
-                ${
-                    recipe.description
-                        ? escapeHtml(
-                            recipe.description
-                        )
-                        : "Aucune description."
-                }
-
-            </p>
-
-
-            <div class="recipe-card-actions">
-
-                <button
-                    class="primary-button"
-                    onclick="
-                        startRecipe(
-                            ${recipe.id}
-                        )
-                    "
-                >
-                    COMMENCER →
-                </button>
-
-
-                <button
-                    class="secondary-button"
-                    onclick="
-                        deleteRecipe(
-                            ${recipe.id}
-                        )
-                    "
-                >
-                    🗑 Supprimer
-                </button>
-
-            </div>
-
-        `;
-
-
-        grid.appendChild(card);
-
-    });
 }
 
 
-/* =========================
-   SUPPRIMER RECETTE
-========================= */
+/* =========================================================
+   SUPPRIMER RECETTE FIRESTORE
+========================================================= */
 
-function deleteRecipe(id) {
+async function deleteRecipe(
+    id
+) {
 
     const recipe =
         recipes.find(
@@ -1253,6 +1690,7 @@ function deleteRecipe(id) {
     if (!recipe) {
 
         return;
+
     }
 
 
@@ -1265,27 +1703,55 @@ function deleteRecipe(id) {
     if (!confirmation) {
 
         return;
+
     }
 
 
-    recipes =
-        recipes.filter(
-            item =>
-                item.id !== id
+    try {
+
+        await deleteDoc(
+
+            doc(
+                db,
+                "recipes",
+                String(id)
+            )
+
         );
 
 
-    saveRecipes();
+        /*
+         * Pas besoin de supprimer manuellement
+         * du tableau recipes.
+         *
+         * onSnapshot() va mettre à jour
+         * automatiquement la liste.
+         */
 
-    renderRecipes();
+    } catch (error) {
+
+        console.error(
+            "Erreur lors de la suppression :",
+            error
+        );
+
+
+        alert(
+            "Impossible de supprimer la recette."
+        );
+
+    }
+
 }
 
 
-/* =========================
+/* =========================================================
    COMMENCER UNE RECETTE
-========================= */
+========================================================= */
 
-function startRecipe(id) {
+function startRecipe(
+    id
+) {
 
     const recipe =
         recipes.find(
@@ -1297,10 +1763,12 @@ function startRecipe(id) {
     if (!recipe) {
 
         return;
+
     }
 
 
-    currentRecipeId = id;
+    currentRecipeId =
+        id;
 
 
     const reader =
@@ -1314,9 +1782,11 @@ function startRecipe(id) {
         <div class="recipe-start-screen">
 
             <h1>
+
                 ${escapeHtml(
                     recipe.name
                 )}
+
             </h1>
 
 
@@ -1336,6 +1806,7 @@ function startRecipe(id) {
                     `
 
                     : ""
+
             }
 
 
@@ -1349,6 +1820,7 @@ function startRecipe(id) {
                 <ul class="reader-ingredients">
 
                     ${recipe.ingredients.map(
+
                         ingredient => `
 
                             <li>
@@ -1372,6 +1844,7 @@ function startRecipe(id) {
                             </li>
 
                         `
+
                     ).join("")}
 
                 </ul>
@@ -1393,7 +1866,9 @@ function startRecipe(id) {
                     class="primary-button start-reading-button"
                     onclick="
                         startReadingRecipe(
-                            ${recipe.id}
+                            '${escapeHtml(
+                                recipe.id
+                            )}'
                         )
                     "
                 >
@@ -1407,15 +1882,20 @@ function startRecipe(id) {
     `;
 
 
-    showPage("lecture");
+    showPage(
+        "lecture"
+    );
+
 }
 
 
-/* =========================
+/* =========================================================
    COMMENCER LA LECTURE
-========================= */
+========================================================= */
 
-function startReadingRecipe(id) {
+function startReadingRecipe(
+    id
+) {
 
     const recipe =
         recipes.find(
@@ -1427,12 +1907,16 @@ function startReadingRecipe(id) {
     if (!recipe) {
 
         return;
+
     }
 
 
     if (
+
         !recipe.steps ||
+
         recipe.steps.length === 0
+
     ) {
 
         alert(
@@ -1440,22 +1924,25 @@ function startReadingRecipe(id) {
         );
 
         return;
+
     }
 
 
-    currentRecipeId = id;
+    currentRecipeId =
+        id;
 
 
     showRecipeStep(
         id,
         0
     );
+
 }
 
 
-/* =========================
+/* =========================================================
    AFFICHER UNE ETAPE
-========================= */
+========================================================= */
 
 function showRecipeStep(
     id,
@@ -1472,6 +1959,7 @@ function showRecipeStep(
     if (!recipe) {
 
         return;
+
     }
 
 
@@ -1480,9 +1968,12 @@ function showRecipeStep(
         recipe.steps.length
     ) {
 
-        showRecipeFinished(id);
+        showRecipeFinished(
+            id
+        );
 
         return;
+
     }
 
 
@@ -1493,7 +1984,9 @@ function showRecipeStep(
 
 
     const step =
-        recipe.steps[stepIndex];
+        recipe.steps[
+            stepIndex
+        ];
 
 
     reader.innerHTML = `
@@ -1562,7 +2055,9 @@ function showRecipeStep(
                                 class="secondary-button"
                                 onclick="
                                     showRecipeStep(
-                                        ${recipe.id},
+                                        '${escapeHtml(
+                                            recipe.id
+                                        )}',
                                         ${stepIndex - 1}
                                     )
                                 "
@@ -1578,7 +2073,9 @@ function showRecipeStep(
                                 class="secondary-button"
                                 onclick="
                                     startRecipe(
-                                        ${recipe.id}
+                                        '${escapeHtml(
+                                            recipe.id
+                                        )}'
                                     )
                                 "
                             >
@@ -1593,7 +2090,9 @@ function showRecipeStep(
                     class="primary-button"
                     onclick="
                         showRecipeStep(
-                            ${recipe.id},
+                            '${escapeHtml(
+                                recipe.id
+                            )}',
                             ${stepIndex + 1}
                         )
                     "
@@ -1617,15 +2116,20 @@ function showRecipeStep(
     `;
 
 
-    showPage("lecture");
+    showPage(
+        "lecture"
+    );
+
 }
 
 
-/* =========================
+/* =========================================================
    FIN DE LA RECETTE
-========================= */
+========================================================= */
 
-function showRecipeFinished(id) {
+function showRecipeFinished(
+    id
+) {
 
     const recipe =
         recipes.find(
@@ -1637,6 +2141,7 @@ function showRecipeFinished(id) {
     if (!recipe) {
 
         return;
+
     }
 
 
@@ -1693,7 +2198,9 @@ function showRecipeFinished(id) {
                     class="primary-button"
                     onclick="
                         startRecipe(
-                            ${recipe.id}
+                            '${escapeHtml(
+                                recipe.id
+                            )}'
                         )
                     "
                 >
@@ -1707,22 +2214,31 @@ function showRecipeFinished(id) {
     `;
 
 
-    showPage("lecture");
+    showPage(
+        "lecture"
+    );
+
 }
 
 
-/* =========================
+/* =========================================================
    PROTECTION HTML
-========================= */
+========================================================= */
 
-function escapeHtml(value) {
+function escapeHtml(
+    value
+) {
 
     if (
+
         value === null ||
+
         value === undefined
+
     ) {
 
         return "";
+
     }
 
 
@@ -1752,13 +2268,85 @@ function escapeHtml(value) {
             /'/g,
             "&#039;"
         );
+
 }
 
 
-/* =========================
+/* =========================================================
    INITIALISATION
-========================= */
+========================================================= */
 
-loadRecipes();
+initializeAuthentication();
 
 renderRecipes();
+
+
+/* =========================================================
+   IMPORTANT :
+   Les fonctions utilisées dans les onclick=""
+   du HTML doivent être accessibles depuis window
+   car script.js est maintenant un module.
+========================================================= */
+
+window.showPage =
+    showPage;
+
+window.newRecipe =
+    newRecipe;
+
+window.showRecipes =
+    showRecipes;
+
+window.startIngredients =
+    startIngredients;
+
+window.addIngredient =
+    addIngredient;
+
+window.updateProduct =
+    updateProduct;
+
+window.updateQuantity =
+    updateQuantity;
+
+window.updateType =
+    updateType;
+
+window.updateUnit =
+    updateUnit;
+
+window.deleteIngredient =
+    deleteIngredient;
+
+window.finishIngredients =
+    finishIngredients;
+
+window.addStep =
+    addStep;
+
+window.updateStepText =
+    updateStepText;
+
+window.deleteStep =
+    deleteStep;
+
+window.insertIngredient =
+    insertIngredient;
+
+window.finishRecipe =
+    finishRecipe;
+
+window.deleteRecipe =
+    deleteRecipe;
+
+window.startRecipe =
+    startRecipe;
+
+window.startReadingRecipe =
+    startReadingRecipe;
+
+window.showRecipeStep =
+    showRecipeStep;
+
+window.showRecipeFinished =
+    showRecipeFinished;
