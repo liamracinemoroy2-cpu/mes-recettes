@@ -1,75 +1,27 @@
-/* =========================================================
-   FIREBASE
-========================================================= */
-
-import {
-    initializeApp
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-
-
-import {
-    getFirestore,
-    collection,
-    addDoc,
-    onSnapshot,
-    doc,
-    deleteDoc
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-
-
-import {
-    getAuth,
-    signInAnonymously,
-    onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-
-
-/* =========================
-   CONFIGURATION FIREBASE
-========================= */
+// ============================================================
+// FIREBASE
+// ============================================================
 
 const firebaseConfig = {
-
-    apiKey:
-        "AIzaSyBKpLpyXlwAzFauEte-XFQdEiML-nRbaJ8",
-
-    authDomain:
-        "mes-recettes39.firebaseapp.com",
-
-    projectId:
-        "mes-recettes39",
-
-    storageBucket:
-        "mes-recettes39.firebasestorage.app",
-
-    messagingSenderId:
-        "121399383526",
-
-    appId:
-        "1:121399383526:web:de0667b9467530a4b13227"
-
+    apiKey: "AIzaSyBKpLpyXlwAzFauEte-XFQdEiML-nRbaJ8",
+    authDomain: "mes-recettes39.firebaseapp.com",
+    projectId: "mes-recettes39",
+    storageBucket: "mes-recettes39.firebasestorage.app",
+    messagingSenderId: "121399383526",
+    appId: "1:121399383526:web:de0667b9467530a4b13227"
 };
 
 
-/* =========================
-   INITIALISATION FIREBASE
-========================= */
+// Initialisation Firebase
+firebase.initializeApp(firebaseConfig);
 
-const app =
-    initializeApp(firebaseConfig);
-
-
-const db =
-    getFirestore(app);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
 
-const auth =
-    getAuth(app);
-
-
-/* =========================================================
-   VARIABLES
-========================================================= */
+// ============================================================
+// VARIABLES
+// ============================================================
 
 let ingredients = [];
 let ingredientId = 0;
@@ -80,286 +32,131 @@ let stepId = 0;
 let recipes = [];
 
 let currentRecipeId = null;
-
-let recipesListenerStarted = false;
-
-let currentUser = null;
+let currentStepIndex = 0;
 
 
-/* =========================================================
-   ATTENTE DE LA CONNEXION FIREBASE
-========================================================= */
+// ============================================================
+// AUTHENTIFICATION ANONYME
+// ============================================================
 
-let authReadyResolve;
+auth.signInAnonymously()
+    .then(() => {
 
-const authReady =
-    new Promise(resolve => {
+        console.log("Connexion Firebase réussie.");
 
-        authReadyResolve = resolve;
-
-    });
-
-
-/* =========================================================
-   AUTHENTIFICATION ANONYME
-========================================================= */
-
-onAuthStateChanged(
-    auth,
-    user => {
-
-        if (user) {
-
-            currentUser = user;
-
-            authReadyResolve(user);
-
-            subscribeToRecipes();
-
-        }
-
-    }
-);
-
-
-/* =========================
-   CONNEXION ANONYME
-========================= */
-
-async function initializeAuthentication() {
-
-    try {
-
-        await signInAnonymously(auth);
-
-    } catch (error) {
+    })
+    .catch((error) => {
 
         console.error(
-            "Erreur d'authentification Firebase :",
+            "Erreur de connexion Firebase :",
             error
         );
 
         alert(
-            "Impossible de se connecter à Firebase. Vérifie que l'authentification anonyme est activée."
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   RECUPERATION DES RECETTES FIRESTORE
-========================================================= */
-
-function subscribeToRecipes() {
-
-    if (recipesListenerStarted) {
-
-        return;
-
-    }
-
-
-    recipesListenerStarted = true;
-
-
-    const recipesCollection =
-        collection(
-            db,
-            "recipes"
-        );
-
-
-    onSnapshot(
-
-        recipesCollection,
-
-        snapshot => {
-
-            recipes =
-                snapshot.docs
-
-                    .map(documentSnapshot => {
-
-                        return {
-
-                            id:
-                                documentSnapshot.id,
-
-                            ...documentSnapshot.data()
-
-                        };
-
-                    })
-
-                    /*
-                     * On ignore les anciens documents
-                     * de test ou incomplets.
-                     */
-
-                    .filter(recipe => {
-
-                        return (
-
-                            recipe.name &&
-
-                            Array.isArray(
-                                recipe.ingredients
-                            ) &&
-
-                            Array.isArray(
-                                recipe.steps
-                            )
-
-                        );
-
-                    });
-
-
-            renderRecipes();
-
-        },
-
-
-        error => {
-
-            console.error(
-                "Erreur Firestore :",
-                error
-            );
-
-
-            alert(
-                "Impossible de charger les recettes depuis Firebase."
-            );
-
-        }
-
-    );
-
-}
-
-
-/* =========================================================
-   NAVIGATION
-========================================================= */
-
-function showPage(pageId) {
-
-    const pages =
-        document.querySelectorAll(
-            ".page"
-        );
-
-
-    pages.forEach(page => {
-
-        page.classList.remove(
-            "active"
+            "Impossible de se connecter à Firebase.\n\n" +
+            "Vérifie que l'authentification anonyme est activée dans Firebase."
         );
 
     });
 
 
-    const selectedPage =
-        document.getElementById(
-            pageId
+auth.onAuthStateChanged((user) => {
+
+    if (user) {
+
+        console.log(
+            "Utilisateur Firebase connecté :",
+            user.uid
         );
 
+        subscribeToRecipes();
 
-    if (selectedPage) {
+    }
 
-        selectedPage.classList.add(
-            "active"
-        );
+});
+
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+
+function showPage(pageId) {
+
+    const pages = document.querySelectorAll(".page");
+
+    pages.forEach((page) => {
+
+        page.classList.remove("active");
+
+    });
+
+
+    const page = document.getElementById(pageId);
+
+    if (page) {
+
+        page.classList.add("active");
 
     }
 
 
     window.scrollTo({
-
         top: 0,
-
         behavior: "smooth"
-
     });
 
 }
 
 
-/* =========================================================
-   NOUVELLE RECETTE
-========================================================= */
+// ============================================================
+// NOUVELLE RECETTE
+// ============================================================
 
 function newRecipe() {
 
     ingredients = [];
-
     ingredientId = 0;
 
-
     steps = [];
-
     stepId = 0;
 
-
     currentRecipeId = null;
+    currentStepIndex = 0;
 
 
-    document.getElementById(
-        "recipe-name"
-    ).value = "";
+    document.getElementById("recipe-name").value = "";
+    document.getElementById("recipe-description").value = "";
 
 
-    document.getElementById(
-        "recipe-description"
-    ).value = "";
+    document.getElementById("ingredients-list").innerHTML = "";
+
+    document.getElementById("steps-list").innerHTML = "";
 
 
-    document.getElementById(
-        "ingredients-list"
-    ).innerHTML = "";
-
-
-    document.getElementById(
-        "steps-list"
-    ).innerHTML = "";
-
-
-    showPage(
-        "creer"
-    );
+    showPage("creer");
 
 }
 
 
-/* =========================================================
-   COMMENCER LES INGREDIENTS
-========================================================= */
+// ============================================================
+// ETAPE 1 : INFORMATIONS
+// ============================================================
 
 function startIngredients() {
 
-    const name =
-        document.getElementById(
-            "recipe-name"
-        ).value.trim();
+    const name = document
+        .getElementById("recipe-name")
+        .value
+        .trim();
 
 
     if (!name) {
 
-        alert(
-            "Merci de donner un nom à ta recette."
-        );
+        alert("Merci d'indiquer un nom pour la recette.");
 
         return;
 
     }
-
-
-    showPage(
-        "ingredients"
-    );
 
 
     if (ingredients.length === 0) {
@@ -368,432 +165,247 @@ function startIngredients() {
 
     }
 
+
+    showPage("ingredients");
+
 }
 
 
-/* =========================================================
-   AJOUTER UN INGREDIENT
-========================================================= */
+// ============================================================
+// INGREDIENTS
+// ============================================================
 
 function addIngredient() {
 
-    ingredients.push({
+    const ingredient = {
 
-        id:
-            ingredientId,
+        id: ingredientId++,
 
-        product:
-            "",
+        product: "",
 
-        quantity:
-            "",
+        quantity: "",
 
-        type:
-            "mass",
+        type: "Masse",
 
-        unit:
-            "g"
+        unit: "g",
 
-    });
+        customUnit: "",
+
+        used: false
+
+    };
 
 
-    ingredientId++;
-
+    ingredients.push(ingredient);
 
     renderIngredients();
 
 }
 
 
-/* =========================================================
-   AFFICHER LES INGREDIENTS
-========================================================= */
+// ============================================================
+// AFFICHAGE INGREDIENTS
+// ============================================================
 
 function renderIngredients() {
 
     const container =
-        document.getElementById(
-            "ingredients-list"
-        );
+        document.getElementById("ingredients-list");
 
 
     container.innerHTML = "";
 
 
-    ingredients.forEach(
-        ingredient => {
+    ingredients.forEach((ingredient) => {
 
-            const card =
-                document.createElement(
-                    "div"
-                );
+        const row = document.createElement("div");
+
+        row.className = "ingredient-row";
 
 
-            card.className =
-                "ingredient-card";
+        let unitOptions = "";
 
 
-            let unitField = "";
+        if (ingredient.type === "Masse") {
 
-
-            if (
-                ingredient.type ===
-                "custom"
-            ) {
-
-                unitField = `
-
-                    <input
-                        type="text"
-                        value="${escapeHtml(
-                            ingredient.unit
-                        )}"
-                        placeholder="Ex : cuillère à soupe"
-                        oninput="
-                            updateUnit(
-                                ${ingredient.id},
-                                this.value
-                            )
-                        "
-                    >
-
-                `;
-
-            } else {
-
-                unitField = `
-
-                    <select
-                        onchange="
-                            updateUnit(
-                                ${ingredient.id},
-                                this.value
-                            )
-                        "
-                    >
-
-                        ${getUnitOptions(
-
-                            ingredient.type,
-
-                            ingredient.unit
-
-                        )}
-
-                    </select>
-
-                `;
-
-            }
-
-
-            card.innerHTML = `
-
-                <div class="ingredient-field">
-
-                    <label>
-                        Produit
-                    </label>
-
-                    <input
-                        type="text"
-                        value="${escapeHtml(
-                            ingredient.product
-                        )}"
-                        placeholder="Ex : Farine"
-                        oninput="
-                            updateProduct(
-                                ${ingredient.id},
-                                this.value
-                            )
-                        "
-                    >
-
-                </div>
-
-
-                <div class="ingredient-field">
-
-                    <label>
-                        Quantité
-                    </label>
-
-                    <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        value="${escapeHtml(
-                            ingredient.quantity
-                        )}"
-                        placeholder="500"
-                        oninput="
-                            updateQuantity(
-                                ${ingredient.id},
-                                this.value
-                            )
-                        "
-                    >
-
-                </div>
-
-
-                <div class="ingredient-field">
-
-                    <label>
-                        Type
-                    </label>
-
-                    <select
-                        onchange="
-                            updateType(
-                                ${ingredient.id},
-                                this.value
-                            )
-                        "
-                    >
-
-                        <option
-                            value="mass"
-                            ${
-                                ingredient.type === "mass"
-                                    ? "selected"
-                                    : ""
-                            }
-                        >
-                            MASSE
-                        </option>
-
-
-                        <option
-                            value="volume"
-                            ${
-                                ingredient.type === "volume"
-                                    ? "selected"
-                                    : ""
-                            }
-                        >
-                            VOLUME
-                        </option>
-
-
-                        <option
-                            value="custom"
-                            ${
-                                ingredient.type === "custom"
-                                    ? "selected"
-                                    : ""
-                            }
-                        >
-                            PERSONNALISER
-                        </option>
-
-                    </select>
-
-                </div>
-
-
-                <div class="ingredient-field">
-
-                    <label>
-
-                        ${
-                            ingredient.type === "custom"
-                                ? "Unité personnalisée"
-                                : "Unité"
-                        }
-
-                    </label>
-
-                    ${unitField}
-
-                </div>
-
-
-                <button
-                    class="delete-button"
-                    onclick="
-                        deleteIngredient(
-                            ${ingredient.id}
-                        )
-                    "
-                    title="Supprimer"
-                >
-                    ✕
-                </button>
-
+            unitOptions = `
+                <option value="mg" ${ingredient.unit === "mg" ? "selected" : ""}>mg</option>
+                <option value="g" ${ingredient.unit === "g" ? "selected" : ""}>g</option>
+                <option value="kg" ${ingredient.unit === "kg" ? "selected" : ""}>kg</option>
+                <option value="t" ${ingredient.unit === "t" ? "selected" : ""}>t</option>
             `;
 
+        }
 
-            container.appendChild(
-                card
-            );
+
+        else if (ingredient.type === "Volume") {
+
+            unitOptions = `
+                <option value="ml" ${ingredient.unit === "ml" ? "selected" : ""}>ml</option>
+                <option value="cl" ${ingredient.unit === "cl" ? "selected" : ""}>cl</option>
+                <option value="dl" ${ingredient.unit === "dl" ? "selected" : ""}>dl</option>
+                <option value="l" ${ingredient.unit === "l" ? "selected" : ""}>l</option>
+            `;
 
         }
-    );
-
-}
 
 
-/* =========================================================
-   UNITES
-========================================================= */
+        row.innerHTML = `
 
-function getUnitOptions(
-    type,
-    selectedUnit
-) {
-
-    let units = [];
+            <input
+                type="text"
+                placeholder="Produit"
+                value="${escapeHtml(ingredient.product)}"
+                oninput="updateProduct(${ingredient.id}, this.value)"
+            >
 
 
-    if (type === "mass") {
-
-        units = [
-
-            "mg",
-            "g",
-            "kg",
-            "t"
-
-        ];
-
-    } else if (
-        type === "volume"
-    ) {
-
-        units = [
-
-            "ml",
-            "cl",
-            "dl",
-            "l"
-
-        ];
-
-    }
+            <input
+                type="number"
+                min="0"
+                step="any"
+                placeholder="Quantité"
+                value="${escapeHtml(ingredient.quantity)}"
+                oninput="updateQuantity(${ingredient.id}, this.value)"
+            >
 
 
-    return units.map(
-        unit => {
-
-            return `
+            <select
+                onchange="updateType(${ingredient.id}, this.value)"
+            >
 
                 <option
-                    value="${unit}"
-                    ${
-                        unit === selectedUnit
-                            ? "selected"
-                            : ""
-                    }
+                    value="Masse"
+                    ${ingredient.type === "Masse" ? "selected" : ""}
                 >
-                    ${unit}
+                    MASSE
                 </option>
 
-            `;
+                <option
+                    value="Volume"
+                    ${ingredient.type === "Volume" ? "selected" : ""}
+                >
+                    VOLUME
+                </option>
 
-        }
-    ).join("");
+                <option
+                    value="Personnaliser"
+                    ${ingredient.type === "Personnaliser" ? "selected" : ""}
+                >
+                    PERSONNALISER
+                </option>
+
+            </select>
+
+
+            ${
+                ingredient.type === "Personnaliser"
+
+                ?
+
+                `
+                    <input
+                        type="text"
+                        placeholder="Unité"
+                        value="${escapeHtml(ingredient.customUnit)}"
+                        oninput="updateUnit(${ingredient.id}, this.value)"
+                    >
+                `
+
+                :
+
+                `
+                    <select
+                        onchange="updateUnit(${ingredient.id}, this.value)"
+                    >
+                        ${unitOptions}
+                    </select>
+                `
+            }
+
+
+            <button
+                class="delete-button"
+                onclick="deleteIngredient(${ingredient.id})"
+                title="Supprimer"
+            >
+                🗑️
+            </button>
+
+        `;
+
+
+        container.appendChild(row);
+
+    });
 
 }
 
 
-/* =========================================================
-   MISE A JOUR INGREDIENT
-========================================================= */
+// ============================================================
+// MODIFICATION INGREDIENT
+// ============================================================
 
-function updateProduct(
-    id,
-    value
-) {
+function updateProduct(id, value) {
 
     const ingredient =
-        ingredients.find(
-            item =>
-                item.id === id
-        );
+        ingredients.find(item => item.id === id);
 
 
     if (ingredient) {
 
-        ingredient.product =
-            value;
+        ingredient.product = value;
 
     }
 
 }
 
 
-/* =========================
-   QUANTITE
-========================= */
-
-function updateQuantity(
-    id,
-    value
-) {
+function updateQuantity(id, value) {
 
     const ingredient =
-        ingredients.find(
-            item =>
-                item.id === id
-        );
+        ingredients.find(item => item.id === id);
 
 
     if (ingredient) {
 
-        ingredient.quantity =
-            value;
+        ingredient.quantity = value;
 
     }
 
 }
 
 
-/* =========================================================
-   MODIFIER LE TYPE
-========================================================= */
-
-function updateType(
-    id,
-    value
-) {
+function updateType(id, value) {
 
     const ingredient =
-        ingredients.find(
-            item =>
-                item.id === id
-        );
+        ingredients.find(item => item.id === id);
 
 
-    if (!ingredient) {
+    if (!ingredient) return;
 
-        return;
+
+    ingredient.type = value;
+
+
+    if (value === "Masse") {
+
+        ingredient.unit = "g";
+        ingredient.customUnit = "";
 
     }
 
+    else if (value === "Volume") {
 
-    ingredient.type =
-        value;
+        ingredient.unit = "ml";
+        ingredient.customUnit = "";
 
+    }
 
-    if (value === "mass") {
+    else {
 
-        ingredient.unit =
-            "g";
-
-    } else if (
-        value === "volume"
-    ) {
-
-        ingredient.unit =
-            "ml";
-
-    } else if (
-        value === "custom"
-    ) {
-
-        ingredient.unit =
-            "";
+        ingredient.unit = "";
+        ingredient.customUnit = "";
 
     }
 
@@ -803,106 +415,66 @@ function updateType(
 }
 
 
-/* =========================================================
-   MODIFIER L'UNITE
-========================================================= */
-
-function updateUnit(
-    id,
-    value
-) {
+function updateUnit(id, value) {
 
     const ingredient =
-        ingredients.find(
-            item =>
-                item.id === id
-        );
+        ingredients.find(item => item.id === id);
 
 
-    if (ingredient) {
+    if (!ingredient) return;
 
-        ingredient.unit =
-            value;
+
+    if (ingredient.type === "Personnaliser") {
+
+        ingredient.customUnit = value;
+
+    }
+
+    else {
+
+        ingredient.unit = value;
 
     }
 
 }
 
 
-/* =========================================================
-   SUPPRIMER INGREDIENT
-========================================================= */
+// ============================================================
+// SUPPRESSION INGREDIENT
+// ============================================================
 
-function deleteIngredient(
-    id
-) {
+function deleteIngredient(id) {
 
-    ingredients =
-        ingredients.filter(
-            ingredient =>
-                ingredient.id !== id
-        );
-
-
-    steps.forEach(
-        step => {
-
-            if (
-                Array.isArray(
-                    step.ingredientsUsed
-                )
-            ) {
-
-                step.ingredientsUsed =
-                    step.ingredientsUsed.filter(
-                        ingredientId =>
-                            ingredientId !== id
-                    );
-
-            }
-
-        }
+    ingredients = ingredients.filter(
+        ingredient => ingredient.id !== id
     );
 
 
     renderIngredients();
 
-    renderSteps();
-
 }
 
 
-/* =========================================================
-   FIN INGREDIENTS
-========================================================= */
+// ============================================================
+// FIN INGREDIENTS
+// ============================================================
 
 function finishIngredients() {
 
-    if (
-        ingredients.length === 0
-    ) {
+    if (ingredients.length === 0) {
 
-        alert(
-            "Ajoute au moins un ingrédient."
-        );
+        alert("Ajoute au moins un ingrédient.");
 
         return;
 
     }
 
 
-    for (
-        const ingredient
-        of ingredients
-    ) {
+    for (const ingredient of ingredients) {
 
-        if (
-            !ingredient.product.trim()
-        ) {
+        if (!ingredient.product.trim()) {
 
-            alert(
-                "Merci de renseigner tous les produits."
-            );
+            alert("Chaque ingrédient doit avoir un produit.");
 
             return;
 
@@ -910,17 +482,12 @@ function finishIngredients() {
 
 
         if (
-
             ingredient.quantity === "" ||
-
-            Number(
-                ingredient.quantity
-            ) <= 0
-
+            Number(ingredient.quantity) < 0
         ) {
 
             alert(
-                "Merci de renseigner une quantité valide pour chaque ingrédient."
+                `Indique une quantité pour "${ingredient.product}".`
             );
 
             return;
@@ -929,16 +496,12 @@ function finishIngredients() {
 
 
         if (
-
-            ingredient.type ===
-                "custom" &&
-
-            !ingredient.unit.trim()
-
+            ingredient.type === "Personnaliser" &&
+            !ingredient.customUnit.trim()
         ) {
 
             alert(
-                "Merci de renseigner l'unité personnalisée."
+                `Indique une unité pour "${ingredient.product}".`
             );
 
             return;
@@ -948,392 +511,225 @@ function finishIngredients() {
     }
 
 
-    showPage(
-        "etapes"
-    );
-
-
-    if (
-        steps.length === 0
-    ) {
+    if (steps.length === 0) {
 
         addStep();
 
     }
 
+
+    renderSteps();
+
+    showPage("etapes");
+
 }
 
 
-/* =========================================================
-   AJOUTER UNE ETAPE
-========================================================= */
+// ============================================================
+// ETAPES
+// ============================================================
 
 function addStep() {
 
-    steps.push({
+    const step = {
 
-        id:
-            stepId,
+        id: stepId++,
 
-        text:
-            "",
+        text: "",
 
-        ingredientsUsed:
-            []
+        ingredientsUsed: []
 
-    });
+    };
 
 
-    stepId++;
-
+    steps.push(step);
 
     renderSteps();
 
 }
 
 
-/* =========================================================
-   AFFICHER LES ETAPES
-========================================================= */
+// ============================================================
+// AFFICHAGE DES ETAPES
+// ============================================================
 
 function renderSteps() {
 
     const container =
-        document.getElementById(
-            "steps-list"
-        );
+        document.getElementById("steps-list");
 
 
     container.innerHTML = "";
 
 
-    steps.forEach(
-        (step, index) => {
+    steps.forEach((step, index) => {
 
-            if (
-                !Array.isArray(
-                    step.ingredientsUsed
-                )
-            ) {
+        const row = document.createElement("div");
 
-                step.ingredientsUsed =
-                    [];
-
-            }
+        row.className = "step-row";
 
 
-            const card =
-                document.createElement(
-                    "div"
-                );
+        row.innerHTML = `
+
+            <div class="step-number">
+                Étape ${index + 1}
+            </div>
 
 
-            card.className =
-                "step-editor";
+            <textarea
+                placeholder="Décris cette étape..."
+                oninput="updateStepText(${step.id}, this.value)"
+            >${escapeHtml(step.text)}</textarea>
 
 
-            card.innerHTML = `
+            <div class="step-tools">
 
-                <div class="step-editor-header">
+                <select
+                    onchange="insertIngredient(${step.id}, this.value)"
+                >
 
-                    <div class="step-title">
+                    <option value="">
+                        + Insérer un ingrédient
+                    </option>
 
-                        Étape
-                        ${index + 1}
+                    ${getIngredientOptions(step)}
 
-                    </div>
-
-
-                    <button
-                        class="delete-button"
-                        onclick="
-                            deleteStep(
-                                ${step.id}
-                            )
-                        "
-                        title="Supprimer l'étape"
-                    >
-                        ✕
-                    </button>
-
-                </div>
+                </select>
 
 
-                <textarea
-                    class="step-textarea"
-                    placeholder="Écris ici ce qu'il faut faire..."
-                    oninput="
-                        updateStepText(
-                            ${step.id},
-                            this.value
-                        )
-                    "
-                >${escapeHtml(
-                    step.text
-                )}</textarea>
+                <button
+                    class="delete-button"
+                    onclick="deleteStep(${step.id})"
+                    title="Supprimer l'étape"
+                >
+                    🗑️
+                </button>
+
+            </div>
+
+        `;
 
 
-                <div class="step-tools">
+        container.appendChild(row);
 
-                    <select
-                        onchange="
-                            insertIngredient(
-                                ${step.id},
-                                this.value
-                            )
-                        "
-                    >
-
-                        <option value="">
-                            Insérer un ingrédient...
-                        </option>
-
-                        ${getIngredientOptions(
-                            step.id
-                        )}
-
-                    </select>
-
-                </div>
-
-            `;
-
-
-            container.appendChild(
-                card
-            );
-
-        }
-    );
+    });
 
 }
 
 
-/* =========================================================
-   OPTIONS INGREDIENTS
-========================================================= */
+// ============================================================
+// OPTIONS INGREDIENTS POUR LES ETAPES
+// ============================================================
 
-function getIngredientOptions(
-    stepIdValue
-) {
+function getIngredientOptions(step) {
 
-    const step =
-        steps.find(
-            item =>
-                item.id ===
-                Number(stepIdValue)
-        );
+    return ingredients
+        .map((ingredient) => {
+
+            const used =
+                step.ingredientsUsed.includes(ingredient.id);
 
 
-    const usedIngredients =
-
-        step &&
-
-        Array.isArray(
-            step.ingredientsUsed
-        )
-
-            ? step.ingredientsUsed
-
-            : [];
+            const quantity =
+                ingredient.quantity;
 
 
-    return ingredients.map(
-        ingredient => {
+            const unit =
+                ingredient.type === "Personnaliser"
+                    ? ingredient.customUnit
+                    : ingredient.unit;
 
-            const alreadyUsed =
-                usedIngredients.includes(
-                    ingredient.id
-                );
+
+            const label =
+                `${quantity} ${unit} de ${ingredient.product}`;
 
 
             return `
-
-                <option
-                    value="${ingredient.id}"
-                >
-
-                    ${
-                        alreadyUsed
-                            ? "✅ "
-                            : ""
-                    }
-
-                    ${escapeHtml(
-                        ingredient.product
-                    )}
-
-                    —
-
-                    ${escapeHtml(
-                        ingredient.quantity
-                    )}
-
-                    ${escapeHtml(
-                        getUnitSymbol(
-                            ingredient.unit
-                        )
-                    )}
-
+                <option value="${ingredient.id}">
+                    ${used ? "✅ " : ""}${escapeHtml(label)}
                 </option>
-
             `;
 
-        }
-    ).join("");
+        })
+        .join("");
 
 }
 
 
-/* =========================================================
-   SYMBOLE UNITE
-========================================================= */
+// ============================================================
+// MODIFICATION ETAPE
+// ============================================================
 
-function getUnitSymbol(
-    unit
-) {
-
-    return unit;
-
-}
-
-
-/* =========================================================
-   INSERER INGREDIENT
-========================================================= */
-
-function insertIngredient(
-    stepIdValue,
-    ingredientIdValue
-) {
-
-    if (
-        ingredientIdValue === ""
-    ) {
-
-        return;
-
-    }
-
+function updateStepText(id, value) {
 
     const step =
-        steps.find(
-            item =>
-                item.id ===
-                Number(stepIdValue)
-        );
-
-
-    const ingredient =
-        ingredients.find(
-            item =>
-                item.id ===
-                Number(ingredientIdValue)
-        );
-
-
-    if (
-        !step ||
-        !ingredient
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        !Array.isArray(
-            step.ingredientsUsed
-        )
-    ) {
-
-        step.ingredientsUsed =
-            [];
-
-    }
-
-
-    if (
-        !step.ingredientsUsed.includes(
-            ingredient.id
-        )
-    ) {
-
-        step.ingredientsUsed.push(
-            ingredient.id
-        );
-
-    }
-
-
-    const ingredientText =
-
-        `${ingredient.quantity} ${getUnitSymbol(
-            ingredient.unit
-        )} de ${ingredient.product}`;
-
-
-    if (
-        step.text.trim()
-    ) {
-
-        step.text +=
-            " " +
-            ingredientText;
-
-    } else {
-
-        step.text =
-            ingredientText;
-
-    }
-
-
-    renderSteps();
-
-}
-
-
-/* =========================================================
-   MODIFIER TEXTE ETAPE
-========================================================= */
-
-function updateStepText(
-    id,
-    value
-) {
-
-    const step =
-        steps.find(
-            item =>
-                item.id === id
-        );
+        steps.find(item => item.id === id);
 
 
     if (step) {
 
-        step.text =
-            value;
+        step.text = value;
 
     }
 
 }
 
 
-/* =========================================================
-   SUPPRIMER ETAPE
-========================================================= */
+// ============================================================
+// INSERTION INGREDIENT DANS UNE ETAPE
+// ============================================================
 
-function deleteStep(
-    id
-) {
+function insertIngredient(stepIdValue, ingredientIdValue) {
 
-    steps =
-        steps.filter(
-            step =>
-                step.id !== id
+    if (ingredientIdValue === "") {
+
+        return;
+
+    }
+
+
+    const step =
+        steps.find(item => item.id === stepIdValue);
+
+
+    const ingredient =
+        ingredients.find(
+            item => item.id === Number(ingredientIdValue)
         );
+
+
+    if (!step || !ingredient) {
+
+        return;
+
+    }
+
+
+    const unit =
+        ingredient.type === "Personnaliser"
+            ? ingredient.customUnit
+            : ingredient.unit;
+
+
+    const text =
+        `${ingredient.quantity} ${unit} de ${ingredient.product}`;
+
+
+    if (step.text.trim() !== "") {
+
+        step.text += " ";
+
+    }
+
+
+    step.text += text;
+
+
+    if (!step.ingredientsUsed.includes(ingredient.id)) {
+
+        step.ingredientsUsed.push(ingredient.id);
+
+    }
 
 
     renderSteps();
@@ -1341,65 +737,82 @@ function deleteStep(
 }
 
 
-/* =========================================================
-   TERMINER LA RECETTE
-========================================================= */
+// ============================================================
+// SUPPRESSION ETAPE
+// ============================================================
+
+function deleteStep(id) {
+
+    steps = steps.filter(
+        step => step.id !== id
+    );
+
+
+    renderSteps();
+
+}
+
+
+// ============================================================
+// TERMINER LA RECETTE
+// ============================================================
 
 async function finishRecipe() {
 
-    if (
-        steps.length === 0
-    ) {
-
-        alert(
-            "Ajoute au moins une étape."
-        );
-
-        return;
-
-    }
-
-
-    for (
-        const step
-        of steps
-    ) {
-
-        if (
-            !step.text.trim()
-        ) {
-
-            alert(
-                "Merci de remplir toutes les étapes."
-            );
-
-            return;
-
-        }
-
-    }
-
-
     const name =
-        document.getElementById(
-            "recipe-name"
-        ).value.trim();
+        document
+            .getElementById("recipe-name")
+            .value
+            .trim();
 
 
     const description =
-        document.getElementById(
-            "recipe-description"
-        ).value.trim();
+        document
+            .getElementById("recipe-description")
+            .value
+            .trim();
 
 
     if (!name) {
 
-        alert(
-            "Le nom de la recette est obligatoire."
-        );
+        alert("Le nom de la recette est obligatoire.");
 
-        showPage(
-            "creer"
+        return;
+
+    }
+
+
+    if (steps.length === 0) {
+
+        alert("Ajoute au moins une étape.");
+
+        return;
+
+    }
+
+
+    for (const step of steps) {
+
+        if (!step.text.trim()) {
+
+            alert(
+                "Toutes les étapes doivent contenir du texte."
+            );
+
+            return;
+
+        }
+
+    }
+
+
+    const user = auth.currentUser;
+
+
+    if (!user) {
+
+        alert(
+            "La connexion à Firebase n'est pas encore prête. Réessaie dans quelques secondes."
         );
 
         return;
@@ -1407,102 +820,56 @@ async function finishRecipe() {
     }
 
 
-    /*
-     * On attend que Firebase soit connecté.
-     */
+    const recipe = {
+
+        name: name,
+
+        description: description,
+
+        ingredients: ingredients.map(ingredient => ({
+
+            product: ingredient.product,
+
+            quantity: ingredient.quantity,
+
+            type: ingredient.type,
+
+            unit: ingredient.unit,
+
+            customUnit: ingredient.customUnit
+
+        })),
+
+        steps: steps.map(step => ({
+
+            text: step.text,
+
+            ingredientsUsed: step.ingredientsUsed
+
+        })),
+
+        author_uid: user.uid,
+
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+
+    };
+
 
     try {
 
-        const user =
-            currentUser ||
-            await authReady;
+        await db
+            .collection("recipes")
+            .add(recipe);
 
 
-        if (!user) {
+        alert("🎉 Recette enregistrée avec succès !");
 
-            alert(
-                "La connexion à Firebase n'est pas prête."
-            );
-
-            return;
-
-        }
-
-
-        const recipe = {
-
-            name:
-                name,
-
-            description:
-                description,
-
-            ingredients:
-                ingredients.map(
-                    ingredient => ({
-
-                        ...ingredient
-
-                    })
-                ),
-
-            steps:
-                steps.map(
-                    step => ({
-
-                        ...step,
-
-                        ingredientsUsed:
-
-                            Array.isArray(
-                                step.ingredientsUsed
-                            )
-
-                                ? [
-                                    ...step.ingredientsUsed
-                                ]
-
-                                : []
-
-                    })
-                ),
-
-            author_uid:
-                user.uid
-
-        };
-
-
-        /*
-         * Enregistrement dans Firestore.
-         */
-
-        await addDoc(
-
-            collection(
-                db,
-                "recipes"
-            ),
-
-            recipe
-
-        );
-
-
-        /*
-         * La recette sera automatiquement
-         * récupérée par onSnapshot().
-         */
 
         showRecipes();
 
+    }
 
-        alert(
-            "🎉 Ta recette a bien été enregistrée !"
-        );
-
-
-    } catch (error) {
+    catch (error) {
 
         console.error(
             "Erreur lors de l'enregistrement :",
@@ -1511,7 +878,8 @@ async function finishRecipe() {
 
 
         alert(
-            "Impossible d'enregistrer la recette dans Firebase."
+            "Impossible d'enregistrer la recette.\n\n" +
+            error.message
         );
 
     }
@@ -1519,57 +887,119 @@ async function finishRecipe() {
 }
 
 
-/* =========================================================
-   AFFICHER MES RECETTES
-========================================================= */
+// ============================================================
+// FIRESTORE : RECUPERATION EN TEMPS REEL
+// ============================================================
 
-function showRecipes() {
+function subscribeToRecipes() {
 
-    renderRecipes();
+    db.collection("recipes")
+        .onSnapshot(
 
-    showPage(
-        "recettes"
-    );
+            (snapshot) => {
+
+                recipes = snapshot.docs
+                    .map((document) => {
+
+                        return {
+
+                            id: document.id,
+
+                            ...document.data()
+
+                        };
+
+                    })
+                    .filter((recipe) => {
+
+                        return (
+                            recipe.name &&
+                            Array.isArray(recipe.ingredients) &&
+                            Array.isArray(recipe.steps)
+                        );
+
+                    });
+
+
+                renderRecipes();
+
+            },
+
+
+            (error) => {
+
+                console.error(
+                    "Erreur Firestore :",
+                    error
+                );
+
+
+                document.getElementById(
+                    "recipes-grid"
+                ).innerHTML = `
+
+                    <div class="empty-state">
+
+                        <h2>⚠️ Erreur de connexion</h2>
+
+                        <p>
+                            Impossible de récupérer les recettes.
+                        </p>
+
+                    </div>
+
+                `;
+
+            }
+
+        );
 
 }
 
 
-/* =========================================================
-   AFFICHER LES CARTES
-========================================================= */
+// ============================================================
+// MES RECETTES
+// ============================================================
+
+function showRecipes() {
+
+    showPage("recettes");
+
+    renderRecipes();
+
+}
+
+
+// ============================================================
+// AFFICHAGE DES CARTES
+// ============================================================
 
 function renderRecipes() {
 
-    const grid =
-        document.getElementById(
-            "recipes-grid"
-        );
+    const container =
+        document.getElementById("recipes-grid");
 
 
-    if (!grid) {
+    if (!container) {
 
         return;
 
     }
 
 
-    grid.innerHTML = "";
+    container.innerHTML = "";
 
 
-    if (
-        recipes.length === 0
-    ) {
+    if (recipes.length === 0) {
 
-        grid.innerHTML = `
+        container.innerHTML = `
 
             <div class="empty-state">
 
-                <h2>
-                    🍽️ Aucune recette
-                </h2>
+                <h2>🍴 Aucune recette</h2>
 
                 <p>
-                    Tu n'as pas encore créé de recette.
+                    Tu n'as encore créé aucune recette.
                 </p>
 
                 <button
@@ -1588,103 +1018,85 @@ function renderRecipes() {
     }
 
 
-    recipes.forEach(
-        recipe => {
+    recipes.forEach((recipe) => {
 
-            const card =
-                document.createElement(
-                    "div"
-                );
+        const card =
+            document.createElement("div");
 
 
-            card.className =
-                "recipe-card";
+        card.className = "recipe-card";
 
 
-            card.innerHTML = `
+        card.innerHTML = `
+
+            <div class="recipe-card-content">
 
                 <h2>
-
-                    ${escapeHtml(
-                        recipe.name
-                    )}
-
+                    ${escapeHtml(recipe.name)}
                 </h2>
 
 
-                <p>
+                ${
+                    recipe.description
 
-                    ${
-                        recipe.description
+                    ?
 
-                            ? escapeHtml(
-                                recipe.description
-                            )
+                    `
+                        <p>
+                            ${escapeHtml(recipe.description)}
+                        </p>
+                    `
 
-                            : "Aucune description."
+                    :
 
-                    }
-
-                </p>
+                    `
+                        <p>
+                            Aucune description.
+                        </p>
+                    `
+                }
 
 
                 <div class="recipe-card-actions">
 
                     <button
                         class="primary-button"
-                        onclick="
-                            startRecipe(
-                                '${escapeHtml(
-                                    recipe.id
-                                )}'
-                            )
-                        "
+                        onclick="startRecipe('${recipe.id}')"
                     >
-                        COMMENCER →
+                        COMMENCER
                     </button>
 
 
                     <button
-                        class="secondary-button"
-                        onclick="
-                            deleteRecipe(
-                                '${escapeHtml(
-                                    recipe.id
-                                )}'
-                            )
-                        "
+                        class="delete-button"
+                        onclick="deleteRecipe('${recipe.id}')"
+                        title="Supprimer la recette"
                     >
-                        🗑 Supprimer
+                        🗑️
                     </button>
 
                 </div>
 
-            `;
+            </div>
+
+        `;
 
 
-            grid.appendChild(
-                card
-            );
+        container.appendChild(card);
 
-        }
-    );
+    });
 
 }
 
 
-/* =========================================================
-   SUPPRIMER RECETTE FIRESTORE
-========================================================= */
+// ============================================================
+// SUPPRESSION RECETTE
+// ============================================================
 
-async function deleteRecipe(
-    id
-) {
+async function deleteRecipe(id) {
 
     const recipe =
-        recipes.find(
-            item =>
-                item.id === id
-        );
+        recipes.find(item => item.id === id);
 
 
     if (!recipe) {
@@ -1694,13 +1106,13 @@ async function deleteRecipe(
     }
 
 
-    const confirmation =
+    const confirmed =
         confirm(
             `Supprimer la recette "${recipe.name}" ?`
         );
 
 
-    if (!confirmation) {
+    if (!confirmed) {
 
         return;
 
@@ -1709,26 +1121,15 @@ async function deleteRecipe(
 
     try {
 
-        await deleteDoc(
-
-            doc(
-                db,
-                "recipes",
-                String(id)
-            )
-
-        );
+        await db
+            .collection("recipes")
+            .doc(String(id))
+            .delete();
 
 
-        /*
-         * Pas besoin de supprimer manuellement
-         * du tableau recipes.
-         *
-         * onSnapshot() va mettre à jour
-         * automatiquement la liste.
-         */
+    }
 
-    } catch (error) {
+    catch (error) {
 
         console.error(
             "Erreur lors de la suppression :",
@@ -1737,7 +1138,8 @@ async function deleteRecipe(
 
 
         alert(
-            "Impossible de supprimer la recette."
+            "Impossible de supprimer la recette.\n\n" +
+            error.message
         );
 
     }
@@ -1745,108 +1147,106 @@ async function deleteRecipe(
 }
 
 
-/* =========================================================
-   COMMENCER UNE RECETTE
-========================================================= */
+// ============================================================
+// LECTURE D'UNE RECETTE
+// ============================================================
 
-function startRecipe(
-    id
-) {
+function startRecipe(id) {
+
+    currentRecipeId = id;
+
+    currentStepIndex = 0;
+
 
     const recipe =
-        recipes.find(
-            item =>
-                item.id === id
-        );
+        recipes.find(item => item.id === id);
 
 
     if (!recipe) {
+
+        alert("Recette introuvable.");
 
         return;
 
     }
 
 
-    currentRecipeId =
-        id;
+    startReadingRecipe(recipe);
 
+}
+
+
+// ============================================================
+// ECRAN DE PRESENTATION
+// ============================================================
+
+function startReadingRecipe(recipe) {
 
     const reader =
-        document.getElementById(
-            "recipe-reader"
-        );
+        document.getElementById("recipe-reader");
+
+
+    const ingredientsHtml =
+        recipe.ingredients
+            .map((ingredient) => {
+
+                const unit =
+                    ingredient.type === "Personnaliser"
+                        ? ingredient.customUnit
+                        : ingredient.unit;
+
+
+                return `
+                    <li>
+                        <strong>
+                            ${escapeHtml(ingredient.quantity)}
+                            ${escapeHtml(unit)}
+                        </strong>
+                        de
+                        ${escapeHtml(ingredient.product)}
+                    </li>
+                `;
+
+            })
+            .join("");
 
 
     reader.innerHTML = `
 
-        <div class="recipe-start-screen">
+        <div class="reader-card">
 
-            <h1>
+            <div class="reader-header">
 
-                ${escapeHtml(
-                    recipe.name
-                )}
-
-            </h1>
+                <h1>
+                    ${escapeHtml(recipe.name)}
+                </h1>
 
 
-            ${
-                recipe.description
+                ${
+                    recipe.description
 
-                    ? `
-
-                        <p class="recipe-description">
-
-                            ${escapeHtml(
-                                recipe.description
-                            )}
-
-                        </p>
+                    ?
 
                     `
+                        <p>
+                            ${escapeHtml(recipe.description)}
+                        </p>
+                    `
 
-                    : ""
+                    :
 
-            }
+                    ""
+                }
 
-
-            <div class="reader-section">
-
-                <h2>
-                    Ingrédients
-                </h2>
+            </div>
 
 
-                <ul class="reader-ingredients">
+            <div class="reader-ingredients">
 
-                    ${recipe.ingredients.map(
+                <h2>🛒 Ingrédients</h2>
 
-                        ingredient => `
-
-                            <li>
-
-                                ${escapeHtml(
-                                    ingredient.quantity
-                                )}
-
-                                ${escapeHtml(
-                                    getUnitSymbol(
-                                        ingredient.unit
-                                    )
-                                )}
-
-                                de
-
-                                ${escapeHtml(
-                                    ingredient.product
-                                )}
-
-                            </li>
-
-                        `
-
-                    ).join("")}
-
+                <ul>
+                    ${ingredientsHtml}
                 </ul>
 
             </div>
@@ -1858,19 +1258,13 @@ function startRecipe(
                     class="secondary-button"
                     onclick="showRecipes()"
                 >
-                    ← Retour à mes recettes
+                    ← RETOUR
                 </button>
 
 
                 <button
-                    class="primary-button start-reading-button"
-                    onclick="
-                        startReadingRecipe(
-                            '${escapeHtml(
-                                recipe.id
-                            )}'
-                        )
-                    "
+                    class="primary-button big-button"
+                    onclick="showRecipeStep()"
                 >
                     COMMENCER →
                 </button>
@@ -1882,25 +1276,20 @@ function startRecipe(
     `;
 
 
-    showPage(
-        "lecture"
-    );
+    showPage("lecture");
 
 }
 
 
-/* =========================================================
-   COMMENCER LA LECTURE
-========================================================= */
+// ============================================================
+// AFFICHAGE D'UNE ETAPE
+// ============================================================
 
-function startReadingRecipe(
-    id
-) {
+function showRecipeStep() {
 
     const recipe =
         recipes.find(
-            item =>
-                item.id === id
+            item => item.id === currentRecipeId
         );
 
 
@@ -1911,66 +1300,17 @@ function startReadingRecipe(
     }
 
 
-    if (
-
-        !recipe.steps ||
-
-        recipe.steps.length === 0
-
-    ) {
-
-        alert(
-            "Cette recette ne contient aucune étape."
-        );
-
-        return;
-
-    }
+    const total =
+        recipe.steps.length;
 
 
-    currentRecipeId =
-        id;
+    const step =
+        recipe.steps[currentStepIndex];
 
 
-    showRecipeStep(
-        id,
-        0
-    );
+    if (!step) {
 
-}
-
-
-/* =========================================================
-   AFFICHER UNE ETAPE
-========================================================= */
-
-function showRecipeStep(
-    id,
-    stepIndex
-) {
-
-    const recipe =
-        recipes.find(
-            item =>
-                item.id === id
-        );
-
-
-    if (!recipe) {
-
-        return;
-
-    }
-
-
-    if (
-        stepIndex >=
-        recipe.steps.length
-    ) {
-
-        showRecipeFinished(
-            id
-        );
+        showRecipeFinished();
 
         return;
 
@@ -1978,136 +1318,81 @@ function showRecipeStep(
 
 
     const reader =
-        document.getElementById(
-            "recipe-reader"
-        );
+        document.getElementById("recipe-reader");
 
 
-    const step =
-        recipe.steps[
-            stepIndex
-        ];
+    const isLast =
+        currentStepIndex === total - 1;
 
 
     reader.innerHTML = `
 
-        <div class="recipe-step-screen">
+        <div class="reader-card step-reader">
 
-            <div class="step-progress">
+            <div class="progress">
 
-                Étape
-                ${stepIndex + 1}
-                /
-                ${recipe.steps.length}
+                Étape ${currentStepIndex + 1} / ${total}
 
             </div>
 
 
             <h1>
-
-                ${escapeHtml(
-                    recipe.name
-                )}
-
+                ${escapeHtml(recipe.name)}
             </h1>
 
 
-            <div class="step-card">
+            <div class="current-step">
 
-                <div class="step-number">
+                <div class="current-step-number">
 
-                    ${stepIndex + 1}
-
-                </div>
-
-
-                <div class="step-content">
-
-                    <h2>
-
-                        Étape
-                        ${stepIndex + 1}
-
-                    </h2>
-
-
-                    <p>
-
-                        ${escapeHtml(
-                            step.text
-                        )}
-
-                    </p>
+                    ${currentStepIndex + 1}
 
                 </div>
+
+
+                <p>
+                    ${escapeHtml(step.text)}
+                </p>
 
             </div>
 
 
             <div class="reader-actions">
 
-                ${
-                    stepIndex > 0
-
-                        ? `
-
-                            <button
-                                class="secondary-button"
-                                onclick="
-                                    showRecipeStep(
-                                        '${escapeHtml(
-                                            recipe.id
-                                        )}',
-                                        ${stepIndex - 1}
-                                    )
-                                "
-                            >
-                                ← RETOUR
-                            </button>
-
-                        `
-
-                        : `
-
-                            <button
-                                class="secondary-button"
-                                onclick="
-                                    startRecipe(
-                                        '${escapeHtml(
-                                            recipe.id
-                                        )}'
-                                    )
-                                "
-                            >
-                                ← RETOUR
-                            </button>
-
-                        `
-                }
-
-
                 <button
-                    class="primary-button"
-                    onclick="
-                        showRecipeStep(
-                            '${escapeHtml(
-                                recipe.id
-                            )}',
-                            ${stepIndex + 1}
-                        )
-                    "
+                    class="secondary-button"
+                    onclick="previousRecipeStep()"
+                    ${currentStepIndex === 0 ? "disabled" : ""}
                 >
-
-                    ${
-                        stepIndex ===
-                        recipe.steps.length - 1
-
-                            ? "TERMINER ✓"
-
-                            : "SUIVANT →"
-                    }
-
+                    ← RETOUR
                 </button>
+
+
+                ${
+                    isLast
+
+                    ?
+
+                    `
+                        <button
+                            class="primary-button"
+                            onclick="showRecipeFinished()"
+                        >
+                            TERMINER ✓
+                        </button>
+                    `
+
+                    :
+
+                    `
+                        <button
+                            class="primary-button"
+                            onclick="nextRecipeStep()"
+                        >
+                            SUIVANT →
+                        </button>
+                    `
+                }
 
             </div>
 
@@ -2116,25 +1401,20 @@ function showRecipeStep(
     `;
 
 
-    showPage(
-        "lecture"
-    );
+    showPage("lecture");
 
 }
 
 
-/* =========================================================
-   FIN DE LA RECETTE
-========================================================= */
+// ============================================================
+// ETAPE SUIVANTE
+// ============================================================
 
-function showRecipeFinished(
-    id
-) {
+function nextRecipeStep() {
 
     const recipe =
         recipes.find(
-            item =>
-                item.id === id
+            item => item.id === currentRecipeId
         );
 
 
@@ -2145,42 +1425,78 @@ function showRecipeFinished(
     }
 
 
-    const reader =
-        document.getElementById(
-            "recipe-reader"
+    if (
+        currentStepIndex <
+        recipe.steps.length - 1
+    ) {
+
+        currentStepIndex++;
+
+        showRecipeStep();
+
+    }
+
+    else {
+
+        showRecipeFinished();
+
+    }
+
+}
+
+
+// ============================================================
+// ETAPE PRECEDENTE
+// ============================================================
+
+function previousRecipeStep() {
+
+    if (currentStepIndex > 0) {
+
+        currentStepIndex--;
+
+        showRecipeStep();
+
+    }
+
+}
+
+
+// ============================================================
+// FIN DE RECETTE
+// ============================================================
+
+function showRecipeFinished() {
+
+    const recipe =
+        recipes.find(
+            item => item.id === currentRecipeId
         );
+
+
+    const reader =
+        document.getElementById("recipe-reader");
 
 
     reader.innerHTML = `
 
-        <div class="recipe-finished-screen">
+        <div class="reader-card finished-card">
 
-            <div class="confetti">
-
+            <div class="finished-icon">
                 🎉
-
             </div>
 
 
             <h1>
-
                 Recette terminée !
-
             </h1>
 
 
             <p>
-
                 Bravo ! Tu as terminé
-
                 <strong>
-
-                    ${escapeHtml(
-                        recipe.name
-                    )}
-
+                    ${recipe ? escapeHtml(recipe.name) : "ta recette"}
                 </strong>.
-
             </p>
 
 
@@ -2190,21 +1506,15 @@ function showRecipeFinished(
                     class="secondary-button"
                     onclick="showRecipes()"
                 >
-                    ← Mes recettes
+                    ← MES RECETTES
                 </button>
 
 
                 <button
                     class="primary-button"
-                    onclick="
-                        startRecipe(
-                            '${escapeHtml(
-                                recipe.id
-                            )}'
-                        )
-                    "
+                    onclick="restartRecipe()"
                 >
-                    RECOMMENCER
+                    RECOMMENCER ↻
                 </button>
 
             </div>
@@ -2214,28 +1524,31 @@ function showRecipeFinished(
     `;
 
 
-    showPage(
-        "lecture"
-    );
+    showPage("lecture");
 
 }
 
 
-/* =========================================================
-   PROTECTION HTML
-========================================================= */
+// ============================================================
+// RECOMMENCER
+// ============================================================
 
-function escapeHtml(
-    value
-) {
+function restartRecipe() {
 
-    if (
+    currentStepIndex = 0;
 
-        value === null ||
+    showRecipeStep();
 
-        value === undefined
+}
 
-    ) {
+
+// ============================================================
+// SECURITE HTML
+// ============================================================
+
+function escapeHtml(value) {
+
+    if (value === null || value === undefined) {
 
         return "";
 
@@ -2244,109 +1557,21 @@ function escapeHtml(
 
     return String(value)
 
-        .replace(
-            /&/g,
-            "&amp;"
-        )
+        .replace(/&/g, "&amp;")
 
-        .replace(
-            /</g,
-            "&lt;"
-        )
+        .replace(/</g, "&lt;")
 
-        .replace(
-            />/g,
-            "&gt;"
-        )
+        .replace(/>/g, "&gt;")
 
-        .replace(
-            /"/g,
-            "&quot;"
-        )
+        .replace(/"/g, "&quot;")
 
-        .replace(
-            /'/g,
-            "&#039;"
-        );
+        .replace(/'/g, "&#039;");
 
 }
 
 
-/* =========================================================
-   INITIALISATION
-========================================================= */
-
-initializeAuthentication();
+// ============================================================
+// INITIALISATION
+// ============================================================
 
 renderRecipes();
-
-
-/* =========================================================
-   IMPORTANT :
-   Les fonctions utilisées dans les onclick=""
-   du HTML doivent être accessibles depuis window
-   car script.js est maintenant un module.
-========================================================= */
-
-window.showPage =
-    showPage;
-
-window.newRecipe =
-    newRecipe;
-
-window.showRecipes =
-    showRecipes;
-
-window.startIngredients =
-    startIngredients;
-
-window.addIngredient =
-    addIngredient;
-
-window.updateProduct =
-    updateProduct;
-
-window.updateQuantity =
-    updateQuantity;
-
-window.updateType =
-    updateType;
-
-window.updateUnit =
-    updateUnit;
-
-window.deleteIngredient =
-    deleteIngredient;
-
-window.finishIngredients =
-    finishIngredients;
-
-window.addStep =
-    addStep;
-
-window.updateStepText =
-    updateStepText;
-
-window.deleteStep =
-    deleteStep;
-
-window.insertIngredient =
-    insertIngredient;
-
-window.finishRecipe =
-    finishRecipe;
-
-window.deleteRecipe =
-    deleteRecipe;
-
-window.startRecipe =
-    startRecipe;
-
-window.startReadingRecipe =
-    startReadingRecipe;
-
-window.showRecipeStep =
-    showRecipeStep;
-
-window.showRecipeFinished =
-    showRecipeFinished;
