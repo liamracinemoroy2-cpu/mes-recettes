@@ -1063,7 +1063,7 @@ function renderRecipes() {
                         class="primary-button"
                         onclick="startRecipe('${recipe.id}')"
                     >
-                        COMMENCER
+                        VOIR PLUS
                     </button>
 
 
