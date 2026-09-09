@@ -34,6 +34,10 @@ let recipes = [];
 let currentRecipeId = null;
 let currentStepIndex = 0;
 
+// true = on modifie une recette existante
+// false = on crée une nouvelle recette
+let editingRecipe = false;
+
 
 // ============================================================
 // AUTHENTIFICATION ANONYME
@@ -123,8 +127,11 @@ function newRecipe() {
     currentRecipeId = null;
     currentStepIndex = 0;
 
+    editingRecipe = false;
+
 
     document.getElementById("recipe-name").value = "";
+
     document.getElementById("recipe-description").value = "";
 
 
@@ -391,6 +398,7 @@ function updateType(id, value) {
     if (value === "Masse") {
 
         ingredient.unit = "g";
+
         ingredient.customUnit = "";
 
     }
@@ -398,6 +406,7 @@ function updateType(id, value) {
     else if (value === "Volume") {
 
         ingredient.unit = "ml";
+
         ingredient.customUnit = "";
 
     }
@@ -405,6 +414,7 @@ function updateType(id, value) {
     else {
 
         ingredient.unit = "";
+
         ingredient.customUnit = "";
 
     }
@@ -448,6 +458,19 @@ function deleteIngredient(id) {
     ingredients = ingredients.filter(
         ingredient => ingredient.id !== id
     );
+
+
+    // Retire également cet ingrédient des références
+    // utilisées dans les étapes
+    steps.forEach((step) => {
+
+        step.ingredientsUsed =
+            step.ingredientsUsed.filter(
+                ingredientIdValue =>
+                    ingredientIdValue !== id
+            );
+
+    });
 
 
     renderIngredients();
@@ -754,7 +777,117 @@ function deleteStep(id) {
 
 
 // ============================================================
-// TERMINER LA RECETTE
+// MODIFIER UNE RECETTE EXISTANTE
+// ============================================================
+
+function editRecipe(id) {
+
+    const recipe =
+        recipes.find(item => item.id === id);
+
+
+    if (!recipe) {
+
+        alert("Recette introuvable.");
+
+        return;
+
+    }
+
+
+    // Mode modification
+    editingRecipe = true;
+
+    currentRecipeId = id;
+
+    currentStepIndex = 0;
+
+
+    // --------------------------------------------------------
+    // On récupère les ingrédients existants
+    // --------------------------------------------------------
+
+    ingredients =
+        (recipe.ingredients || []).map((ingredient, index) => {
+
+            return {
+
+                id: index,
+
+                product: ingredient.product || "",
+
+                quantity:
+                    ingredient.quantity !== undefined
+                        ? String(ingredient.quantity)
+                        : "",
+
+                type: ingredient.type || "Masse",
+
+                unit: ingredient.unit || "g",
+
+                customUnit: ingredient.customUnit || "",
+
+                used: false
+
+            };
+
+        });
+
+
+    ingredientId = ingredients.length;
+
+
+    // --------------------------------------------------------
+    // On récupère les étapes existantes
+    // --------------------------------------------------------
+
+    steps =
+        (recipe.steps || []).map((step, index) => {
+
+            return {
+
+                id: index,
+
+                text: step.text || "",
+
+                ingredientsUsed:
+                    Array.isArray(step.ingredientsUsed)
+                        ? [...step.ingredientsUsed]
+                        : []
+
+            };
+
+        });
+
+
+    stepId = steps.length;
+
+
+    // --------------------------------------------------------
+    // On remet les informations de la recette
+    // --------------------------------------------------------
+
+    document.getElementById("recipe-name").value =
+        recipe.name || "";
+
+
+    document.getElementById("recipe-description").value =
+        recipe.description || "";
+
+
+    // --------------------------------------------------------
+    // Affichage des ingrédients
+    // --------------------------------------------------------
+
+    renderIngredients();
+
+    showPage("ingredients");
+
+}
+
+
+// ============================================================
+// ENREGISTRER / MODIFIER LA RECETTE
 // ============================================================
 
 async function finishRecipe() {
@@ -776,6 +909,15 @@ async function finishRecipe() {
     if (!name) {
 
         alert("Le nom de la recette est obligatoire.");
+
+        return;
+
+    }
+
+
+    if (ingredients.length === 0) {
+
+        alert("Ajoute au moins un ingrédient.");
 
         return;
 
@@ -820,7 +962,11 @@ async function finishRecipe() {
     }
 
 
-    const recipe = {
+    // --------------------------------------------------------
+    // Préparation des données
+    // --------------------------------------------------------
+
+    const recipeData = {
 
         name: name,
 
@@ -850,19 +996,61 @@ async function finishRecipe() {
 
         author_uid: user.uid,
 
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        updatedAt:
+            firebase.firestore.FieldValue.serverTimestamp()
 
     };
 
 
     try {
 
-        await db
-            .collection("recipes")
-            .add(recipe);
+        // ====================================================
+        // MODIFICATION D'UNE RECETTE EXISTANTE
+        // ====================================================
+
+        if (editingRecipe && currentRecipeId) {
+
+            await db
+                .collection("recipes")
+                .doc(String(currentRecipeId))
+                .update(recipeData);
 
 
-        alert("🎉 Recette enregistrée avec succès !");
+            alert(
+                "✅ Recette modifiée avec succès !"
+            );
+
+        }
+
+
+        // ====================================================
+        // CREATION D'UNE NOUVELLE RECETTE
+        // ====================================================
+
+        else {
+
+            recipeData.createdAt =
+                firebase.firestore.FieldValue.serverTimestamp();
+
+
+            await db
+                .collection("recipes")
+                .add(recipeData);
+
+
+            alert(
+                "🎉 Recette enregistrée avec succès !"
+            );
+
+        }
+
+
+        // Retour au mode normal
+        editingRecipe = false;
+
+        currentRecipeId = null;
+
+        currentStepIndex = 0;
 
 
         showRecipes();
@@ -1126,7 +1314,6 @@ async function deleteRecipe(id) {
             .doc(String(id))
             .delete();
 
-
     }
 
     catch (error) {
@@ -1263,10 +1450,18 @@ function startReadingRecipe(recipe) {
 
 
                 <button
-                    class="primary-button big-button"
+                    class="primary-button"
                     onclick="showRecipeStep()"
                 >
                     COMMENCER →
+                </button>
+
+
+                <button
+                    class="secondary-button"
+                    onclick="editRecipe('${recipe.id}')"
+                >
+                    MODIFIER ✏️
                 </button>
 
             </div>
